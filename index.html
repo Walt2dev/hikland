@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>🌍 TRES BIOMAS | Ranking + SSL</title>
+  <style>
+    /* ========== ESTILOS GENERALES ========== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', monospace; background-color: black; position: fixed; width: 100%; height: 100%; }
+    #hud-container { position: absolute; top: 10px; left: 10px; z-index: 100; pointer-events: none; display: flex; flex-direction: column; gap: 8px; }
+    #hud { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 8px 16px; border-radius: 40px; color: gold; display: flex; gap: 18px; align-items: center; }
+    #hud span { color: white; font-size: 1.2rem; margin-left: 5px; }
+    #gem-indicator { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 6px 16px; border-radius: 30px; color: #ff88ff; font-weight: bold; font-size: 0.9rem; pointer-events: auto; }
+    #misiones-btn { background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); padding: 10px 20px; border-radius: 30px; color: #ffd966; font-weight: bold; cursor: pointer; pointer-events: auto; border: 2px solid #ffaa44; text-align: center; transition: 0.2s; font-size: 1rem; }
+    #misiones-btn:hover { background: #ffaa44; color: black; }
+    #biome-indicator { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 30px; color: #ffdd99; z-index: 100; pointer-events: none; }
+    #misiones-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(145deg, #1e293b, #0f172a); width: 90%; max-width: 500px; border-radius: 48px; padding: 20px; border: 2px solid #ffaa44; color: white; z-index: 600; display: flex; flex-direction: column; gap: 12px; backdrop-filter: blur(12px); max-height: 80vh; overflow-y: auto; }
+    .mision-item { background: rgba(0,0,0,0.6); border-radius: 20px; padding: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid #555; }
+    .mision-item.completada { border-color: #4caf50; background: rgba(76,175,80,0.25); }
+    .mision-check { font-size: 2rem; min-width: 40px; text-align: center; }
+    .mision-desc { flex: 1; font-size: 1rem; }
+    .mision-recompensa { color: gold; font-weight: bold; }
+    .joystick { position: absolute; bottom: 80px; width: 130px; height: 130px; border-radius: 65px; background: rgba(0,0,0,0.55); backdrop-filter: blur(12px); border: 2px solid rgba(255,215,0,0.7); z-index: 200; touch-action: none; }
+    #move-joystick { left: 70px; } #camera-joystick { right: 70px; }
+    .joystick-base { width: 100%; height: 100%; border-radius: 50%; position: relative; background: rgba(0,0,0,0.4); }
+    .joystick-thumb { position: absolute; width: 50px; height: 50px; background: radial-gradient(circle, #ffcc44, #d48d1a); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px gold; pointer-events: none; }
+    #attack-btn { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle, #ff4444, #aa2222); border: 3px solid #ffaa66; display: flex; align-items: center; justify-content: center; font-size: 34px; color: white; cursor: pointer; z-index: 200; }
+    .shop-modal, .slot-modal, .battleship-modal, .chaman-modal, .score-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.94); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 500; }
+    .shop-card, .slot-card, .battleship-card, .chaman-card, .score-card { background: linear-gradient(145deg, #1e293b, #0f172a); width: 95%; max-width: 650px; border-radius: 48px; padding: 15px; border: 2px solid #ffaa44; color: white; text-align: center; max-height: 95vh; overflow-y: auto; }
+    .chaman-card { border-color: #aa88ff; }
+    .score-card { border-color: #ffd966; }
+    .slot-reels { display: flex; justify-content: center; gap: 20px; margin: 20px 0; background: #000000aa; padding: 20px; border-radius: 40px; }
+    .slot-reel { background: #2d2d3a; padding: 15px 25px; border-radius: 25px; font-size: 4rem; min-width: 100px; text-align: center; }
+    .shop-buttons, .slot-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+    .shop-btn, .slot-btn, .battleship-btn { background: #ffb347; border: none; padding: 10px 22px; border-radius: 40px; font-weight: bold; cursor: pointer; font-family: monospace; font-size: 0.95rem; margin: 4px; }
+    .battleship-btn.danger-btn { background: #cc4444; color: white; }
+    .hidden { display: none !important; }
+    .bs-container { display: flex; flex-direction: column; gap: 15px; }
+    .bs-section h4 { color: #ffcc44; margin-bottom: 8px; font-size: 1.1rem; }
+    .bs-grid { display: grid; gap: 4px; margin: 0 auto; }
+    .bs-cell { aspect-ratio: 1; background: #2d3b5a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.1s; border: 2px solid #5a7a9a; min-width: 28px; min-height: 28px; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .bs-cell.hit { background: #cc4444; border-color: #ff8888; }
+    .bs-cell.miss { background: #445566; border-color: #667788; }
+    .bs-cell.sunk { background: #993333; border-color: #cc5555; }
+    .bs-cell.ship-placed { background: #4a6a8a; border-color: #88aacc; cursor: default; }
+    .bs-cell.ship-hit { background: #cc4444; border-color: #ff8888; }
+    .bs-cell.ship-sunk { background: #993333; border-color: #cc5555; }
+    .bs-status { background: #000000aa; border-radius: 20px; padding: 10px; color: #ffd966; font-weight: bold; margin: 8px 0; }
+    .fighting-arena { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a0f0a, #000000); backdrop-filter: blur(12px); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Segoe UI', monospace; }
+    .fighting-arena.hidden { display: none; }
+    .fight-stage { background: rgba(0,0,0,0.85); border-radius: 70px; width: 95%; max-width: 700px; padding: 25px; border: 3px solid #ffcc44; box-shadow: 0 0 40px rgba(255,200,0,0.6); display: flex; flex-direction: column; align-items: center; gap: 15px; }
+    .fighter-card { width: 100%; text-align: center; background: rgba(0,0,0,0.7); border-radius: 60px; padding: 20px 15px; border: 1px solid #ffaa66; }
+    .hero-card { background: linear-gradient(145deg, #1e3a5f, #0a1a2a); }
+    .enemy-card { background: linear-gradient(145deg, #5e2a2a, #2e1414); }
+    .fighter-emoji { font-size: 5rem; filter: drop-shadow(0 0 15px gold); display: inline-block; }
+    .fighter-name { font-size: 1.5rem; font-weight: bold; margin: 8px 0; background: #000000aa; display: inline-block; padding: 4px 20px; border-radius: 50px; }
+    .health-bar-bg { width: 85%; margin: 15px auto; background: #330000; border-radius: 30px; height: 26px; overflow: hidden; border: 1px solid #ffaa66; }
+    .health-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #ff8888); border-radius: 30px; transition: width 0.2s; }
+    .fight-stats { font-size: 1rem; background: #00000099; display: inline-block; padding: 6px 18px; border-radius: 40px; margin-top: 10px; }
+    .action-panel { display: flex; justify-content: center; gap: 20px; margin: 10px 0; flex-wrap: wrap; }
+    .fight-btn { background: radial-gradient(circle at 30% 20%, #ffcc44, #b45f1b); border: none; font-size: 1.5rem; padding: 10px 28px; border-radius: 60px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #6a3c0c; font-family: monospace; display: inline-flex; align-items: center; gap: 10px; }
+    .fight-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #6a3c0c; }
+    .fight-btn.disabled { opacity: 0.5; pointer-events: none; filter: grayscale(0.3); }
+    .fight-log { background: #000000aa; border-radius: 40px; padding: 12px; text-align: center; font-size: 1.2rem; color: #ffecb3; border: 1px solid #ffaa66; min-height: 70px; font-weight: bold; width: 100%; }
+    .hero-attack-anim { animation: heroAttack 0.2s ease-out; }
+    .enemy-attack-anim { animation: enemyAttack 0.2s ease-out; }
+    .shield-anim { animation: shieldGlow 0.3s ease-out; }
+    .potion-anim { animation: potionDrink 0.4s ease-out; }
+    @keyframes heroAttack { 0% { transform: translateX(0); } 40% { transform: translateX(30px); } 100% { transform: translateX(0); } }
+    @keyframes enemyAttack { 0% { transform: translateX(0); } 40% { transform: translateX(-30px); } 100% { transform: translateX(0); } }
+    @keyframes shieldGlow { 0% { box-shadow: 0 0 0 #44aaff; } 50% { box-shadow: 0 0 30px #44aaff; } 100% { box-shadow: 0 0 0 #44aaff; } }
+    @keyframes potionDrink { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) hue-rotate(20deg); } 100% { filter: brightness(1); } }
+    .floating-damage { position: fixed; font-size: 2.2rem; font-weight: bold; z-index: 1100; animation: floatUp 0.6s ease-out forwards; pointer-events: none; text-shadow: 2px 2px 4px black; }
+    .effect-particle { position: fixed; font-size: 3.5rem; z-index: 1099; pointer-events: none; animation: particlePop 0.4s ease-out forwards; }
+    @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
+    @keyframes particlePop { 0% { opacity: 1; transform: scale(0.5); } 100% { opacity: 0; transform: scale(1.3); } }
+    #score-input { background: #1a1a2e; border: 2px solid #ffb347; color: white; padding: 10px; border-radius: 20px; font-size: 1.2rem; text-align: center; margin: 10px 0; width: 80%; }
+    .score-btn { background: #4caf50; color: white; border: none; padding: 12px 28px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+    @media (max-width: 700px) { .joystick { width: 100px; height: 100px; bottom: 60px; } #move-joystick { left: 20px; } #camera-joystick { right: 20px; } .slot-reel { font-size: 2.5rem; min-width: 70px; } .fighter-emoji { font-size: 4rem; } .fight-btn { font-size: 1.2rem; padding: 8px 18px; } .bs-cell { font-size: 1.2rem; min-width: 22px; min-height: 22px; } }
+  </style>
+  <script src="score.js"></script>
+</head>
+<body>
+  <div id="hud-container">
+    <div id="hud">🪙 <span id="coinVal">0</span>&nbsp;&nbsp;| ❤️ <span id="hpVal">22</span>&nbsp;&nbsp;| 🧪 <span id="potionVal">2</span>&nbsp;&nbsp;| ⚔️ <span id="atkVal">6</span></div>
+    <div id="gem-indicator">💎 Gemas: <span id="gemCount">0</span>/3</div>
+    <div id="misiones-btn">📜 MISIONES (0)</div>
+  </div>
+  <div id="biome-indicator">🌲 BIOMA: <span id="biomeName">BOSQUE</span></div>
+
+  <!-- Panel de Misiones -->
+  <div id="misiones-panel" class="hidden"><h3 style="color:gold;text-align:center;">📜 TABLÓN DE MISIONES</h3><div id="misiones-lista"></div><button id="cerrar-misiones" class="shop-btn" style="background:#555;align-self:center;">CERRAR</button></div>
+
+  <!-- Joysticks y ataque -->
+  <div id="move-joystick" class="joystick"><div class="joystick-base"><div class="joystick-thumb" id="moveThumb"></div></div></div>
+  <div id="camera-joystick" class="joystick"><div class="joystick-base"><div class="joystick-thumb" id="cameraThumb"></div></div></div>
+  <div id="attack-btn">⚡</div>
+
+  <!-- Arena de Combate -->
+  <div id="fightingArena" class="fighting-arena hidden">
+    <div class="fight-stage">
+      <div class="fighter-card enemy-card"><div class="fighter-emoji" id="enemyFighterEmoji">👹💢</div><div class="fighter-name">ENEMIGO</div><div class="health-bar-bg"><div class="health-fill" id="enemyHealthFill"></div></div><div class="fight-stats">❤️ <span id="arenaEnemyHP">0</span>/<span id="arenaEnemyMax">0</span> | ⚔️ ATK <span id="arenaEnemyAtk">0</span></div></div>
+      <div class="fighter-card hero-card"><div class="fighter-emoji" id="heroFighterEmoji">⚔️🧙‍♂️✨</div><div class="fighter-name">HÉROE</div><div class="health-bar-bg"><div class="health-fill" id="heroHealthFill"></div></div><div class="fight-stats">❤️ <span id="arenaHeroHP">0</span>/<span id="arenaHeroMax">0</span> | 🛡️ DEF <span id="arenaHeroDef">0</span></div></div>
+      <div class="action-panel"><button class="fight-btn" id="fightAttackBtn">🗡️ ATACAR</button><button class="fight-btn" id="fightDefendBtn">🛡️ DEFENDER</button><button class="fight-btn" id="fightPotionBtn">🧪 POCIÓN</button></div>
+      <div class="fight-log" id="fightLogMsg">⚔️ ¡CONTINÚA EL DUELO! ⚔️</div>
+    </div>
+  </div>
+
+  <!-- Tienda -->
+  <div id="shopUI" class="shop-modal hidden"><div class="shop-card"><h3>🏠 CABAÑA DEL COMERCIANTE 🏠</h3><p>Tus monedas: <span id="shopCoins" style="color:gold;font-size:1.4rem;">0</span> 🪙</p><div class="shop-buttons"><button class="shop-btn" id="buyHealth">❤️ COMPRAR VIDA (+10 HP) - 12 🪙</button><button class="shop-btn" id="buyPotion">🧪 COMPRAR POCIÓN - 8 🪙</button></div><button class="shop-btn" id="closeShop" style="background:#555;margin-top:15px;">CERRAR</button></div></div>
+
+  <!-- Casino -->
+  <div id="slotUI" class="slot-modal hidden"><div class="slot-card"><h3>🎰 SALA DE JUEGOS 🎰</h3><p>¡TRAGAPERRAS MÁGICO! 🍀</p><p>Cuesta <strong style="color:gold;">5 🪙</strong> por jugada.</p><div class="slot-reels"><div class="slot-reel" id="reel1">🍒</div><div class="slot-reel" id="reel2">🍒</div><div class="slot-reel" id="reel3">🍒</div></div><div class="slot-buttons"><button class="slot-btn" id="spinBtn">🎲 GIRAR (5🪙)</button><button class="slot-btn" id="closeSlotBtn" style="background:#555;">❌ CERRAR</button></div><div id="slotResultMsg" style="margin-top:15px;background:#000000aa;padding:10px;border-radius:20px;">✨ ¡Tira la palanca! ✨</div></div></div>
+
+  <!-- Battleship -->
+  <div id="battleshipUI" class="battleship-modal hidden"><div class="battleship-card"><h3>⛵ MUELLE NEVADO - BATTLESHIP</h3><div class="bs-container"><div class="bs-section"><h4>🎯 RADAR ENEMIGO (Tus disparos)</h4><div id="bs-radar-grid" class="bs-grid" style="grid-template-columns:repeat(5,1fr);max-width:280px;margin:0 auto;"></div></div><div class="bs-status" id="bs-status-msg">🚢 Coloca tus naves en el tablero de abajo (click en celdas adyacentes)</div><div class="bs-section"><h4>🛡️ TU FLOTA</h4><div id="bs-player-grid" class="bs-grid" style="grid-template-columns:repeat(5,1fr);max-width:280px;margin:0 auto;"></div></div></div><div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><button id="bs-ready-btn" class="battleship-btn">✅ LISTO PARA LA BATALLA</button><button id="bs-reset-placement-btn" class="battleship-btn" style="background:#ff9944;">🔄 REINICIAR COLOCACIÓN</button><button id="closeBattleship" class="battleship-btn danger-btn">🚪 SALIR DEL MUELLE</button></div><p style="font-size:0.7rem;color:#aaa;margin-top:6px;">💡 Pista: Cocinero en el Volcán tiene la receta enemiga.</p></div></div>
+
+  <!-- Aldea Chamanes -->
+  <div id="chamanUI" class="chaman-modal hidden"><div class="chaman-card"><h3 style="color:#cc88ff;">🏕️ ALDEA DE CHAMANES 🏕️</h3><p style="font-size:2rem;">🧙‍♂️✨</p><p><strong>ANCIANO SABIO:</strong></p><p id="chaman-dialog" style="background:#000000aa;padding:15px;border-radius:25px;margin:12px 0;"></p><div id="chaman-reward" style="font-size:3rem;margin:15px 0;"></div><button id="closeChaman" class="shop-btn" style="background:#8866cc;">CERRAR</button></div></div>
+
+  <!-- MODAL DE PUNTUACIÓN -->
+  <div id="scoreUI" class="score-modal hidden">
+    <div class="score-card">
+      <h2 style="color:gold;">🏆 ¡HAS COMPLETADO EL JUEGO! 🏆</h2>
+      <p>Introduce tu nombre para el ranking mundial:</p>
+      <input type="text" id="scoreUsername" placeholder="Tu nombre" maxlength="15" />
+      <p style="margin-top:10px;">Puntuación: <span id="scoreValue" style="color:gold;font-size:1.5rem;">0</span></p>
+      <button id="sendScoreBtn" class="score-btn">📤 ENVIAR PUNTUACIÓN</button>
+      <button id="closeScoreBtn" class="shop-btn" style="background:#555;margin-top:10px;">CERRAR</button>
+      <p id="scoreFeedback" style="margin-top:10px;min-height:20px;"></p>
+    </div>
+  </div>
+
+  <div id="sageMessage" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#000000cc;color:#ccffaa;padding:10px 20px;border-radius:40px;z-index:800;font-weight:bold;pointer-events:none;" class="hidden"></div>
+
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+
+
+    // ========== SISTEMA DE MISIONES ==========
+    const MisionesManager = {
+      misiones: [], completadas: new Set(),
+      registrar(m) { this.misiones.push(m); this.renderizar(); },
+      verificarTodas() {
+        let alguna = false;
+        this.misiones.forEach(m => { if (!this.completadas.has(m.id) && m.condicion()) { this.completadas.add(m.id); alguna = true; if (m.recompensa) m.recompensa(); this.mostrarNotificacion(`✅ Misión: ${m.descripcion} (+${m.recompensaTexto})`); } });
+        if (alguna) { this.renderizar(); updateHUD(); }
+        // Si se completa la medalla, mostramos el modal de puntuación
+        if (window.medallaObtenida && !window.scoreShown) {
+          window.scoreShown = true;
+          setTimeout(() => mostrarModalPuntuacion(), 1500);
+        }
+      },
+      renderizar() {
+        const l = document.getElementById('misiones-lista'); if (!l) return;
+        document.getElementById('misiones-btn').innerText = `📜 MISIONES (${this.completadas.size}/${this.misiones.length})`;
+        l.innerHTML = this.misiones.map(m => `<div class="mision-item ${this.completadas.has(m.id) ? 'completada' : ''}"><div class="mision-check">${this.completadas.has(m.id) ? '✅' : '⬜'}</div><div class="mision-desc">${m.descripcion}</div><div class="mision-recompensa">${m.recompensaTexto}</div></div>`).join('');
+      },
+      mostrarNotificacion(msg) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;top:100px;left:50%;transform:translateX(-50%);background:#000000dd;color:#ffd966;padding:12px 30px;border-radius:40px;z-index:900;font-weight:bold;pointer-events:none;'; d.innerText = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2500); }
+    };
+
+    MisionesManager.registrar({ id: 'coins_10', descripcion: 'Consigue 10 monedas', condicion: () => coins >= 10, recompensa: () => { heroMaxHP += 2; heroHP += 2; }, recompensaTexto: '❤️ +2 Vida Máx' });
+    MisionesManager.registrar({ id: 'enemigos_3', descripcion: 'Vence a 3 enemigos', condicion: () => (window.enemigosVencidos || 0) >= 3, recompensa: () => { heroAtk += 1; }, recompensaTexto: '⚔️ +1 ATK' });
+    MisionesManager.registrar({ id: 'portal_1', descripcion: 'Accede al primer portal', condicion: () => (window.portalesUsados || 0) >= 1, recompensa: () => { potions += 2; }, recompensaTexto: '🧪 +2 Pociones' });
+    MisionesManager.registrar({ id: 'battleship_win', descripcion: 'Gana Battleship en el Muelle', condicion: () => (window.battleshipGanado || false), recompensa: () => { coins += 30; heroAtk += 2; }, recompensaTexto: '🪙+30, ⚔️+2' });
+    MisionesManager.registrar({ id: 'cocinero', descripcion: 'Habla con el Cocinero', condicion: () => (window.recetaObtenida || false), recompensa: () => { heroMaxHP += 5; heroHP += 5; }, recompensaTexto: '❤️+5' });
+    MisionesManager.registrar({ id: 'gemas_3', descripcion: 'Reúne 3 Gemas del Coyote', condicion: () => gemsCollected >= 3, recompensa: () => { window.aldeaDesbloqueada = true; }, recompensaTexto: '🏕️ Aldea' });
+    MisionesManager.registrar({ id: 'medalla', descripcion: 'Obtén la Medalla del Ganador', condicion: () => (window.medallaObtenida || false), recompensa: () => { heroMaxHP += 20; heroHP = heroMaxHP; heroAtk += 5; coins += 100; }, recompensaTexto: '🍄 Medalla' });
+
+    window.enemigosVencidos = 0; window.portalesUsados = 0; window.battleshipGanado = false; window.recetaObtenida = false;
+    window.aldeaDesbloqueada = false; window.medallaObtenida = false; window.scoreShown = false;
+    let gemsCollected = 0;
+
+    let interactionCooldown = 0;
+    function setInteractionCooldown() { interactionCooldown = performance.now() + 1200; }
+    function canInteract() { return performance.now() > interactionCooldown; }
+
+    // ========== THREE.JS ==========
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x071a3b); scene.fog = new THREE.FogExp2(0x071a3b, 0.008);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200); camera.position.set(12, 9, 14);
+    const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+    const labelRenderer = new CSS2DRenderer(); labelRenderer.setSize(window.innerWidth, window.innerHeight); labelRenderer.domElement.style.position = 'absolute'; labelRenderer.domElement.style.top = '0px'; labelRenderer.domElement.style.pointerEvents = 'none'; document.body.appendChild(labelRenderer.domElement);
+    scene.add(new THREE.AmbientLight(0x505070)); const dirLight = new THREE.DirectionalLight(0xfff5d1, 1.2); dirLight.position.set(20, 30, 5); scene.add(dirLight); scene.add(new THREE.PointLight(0x4466aa, 0.4, 30, -5, 10, -8));
+
+    const BIOMAS_ARRAY = [
+      { name: "🌲 BOSQUE", color: 0x5a8f4c, fogColor: 0x3a6f2c, enemyMult: 1.0, seedOffset: 0, skyColor: 0x5c9cff, groundColor: 0x5e8c4a, level: 0 },
+      { name: "❄️ TUNDRA", color: 0xc8e4ff, fogColor: 0xaaccff, enemyMult: 1.5, seedOffset: 1000, skyColor: 0xb8d4ff, groundColor: 0xd4eaff, level: 1 },
+      { name: "🌋 VOLCÁN", color: 0xaa4422, fogColor: 0x882211, enemyMult: 2.2, seedOffset: 2000, skyColor: 0x884422, groundColor: 0xaa4422, level: 2 }
+    ];
+    let currentBiomaLevel = 0, currentBioma = BIOMAS_ARRAY[0], currentSeed = Math.floor(Math.random() * 10000);
+    let coins = 25, heroHP = 24, heroMaxHP = 24, heroAtk = 6, heroDef = 2, potions = 2;
+    let inCombat = false, inShop = false, inSlotMachine = false, inBattleship = false, inChaman = false, inScore = false, isAnimating = false;
+    let currentEnemyRef = null, combatDefending = false;
+    let terrainMesh, trees = [], items = [], enemiesList = [], sagesList = [], shopsList = [], casinosList = [], muellesList = [], cocinerosList = [], coyotesList = [], chamanesList = [], portals = [], player;
+    let moveInput = { x: 0, z: 0 }, playerSpeed = 8.0, cameraAngleX = 0, cameraAngleY = 0.85, zoomDistance = 11.5, projectileCooldown = 0;
+
+    const keysPressed = {}; let ctrlPressed = false, lastMouseX = 0, lastMouseY = 0, moveActiveJoystick = false, camActiveJoystick = false;
+    window.addEventListener('keydown', e => { keysPressed[e.key.toLowerCase()] = true; if (e.key === 'Control') ctrlPressed = true; });
+    window.addEventListener('keyup', e => { keysPressed[e.key.toLowerCase()] = false; if (e.key === 'Control') ctrlPressed = false; });
+    window.addEventListener('mousemove', e => { if (ctrlPressed && !camActiveJoystick && !inCombat && !inShop && !inSlotMachine && !inBattleship && !inChaman && !inScore) { cameraAngleX += (e.clientX - lastMouseX) * 0.005; cameraAngleY += (e.clientY - lastMouseY) * 0.005; cameraAngleY = Math.min(1.3, Math.max(0.3, cameraAngleY)); } lastMouseX = e.clientX; lastMouseY = e.clientY; });
+
+    class SimplexNoise { constructor(seed = 1) { this.grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]]; this.p = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180]; this.perm = new Array(512); this.seed(seed); } seed(s) { for(let i=0;i<256;i++){let v=(i+s)%256;this.perm[i]=this.perm[i+256]=this.p[v];} } dot(g,x,y,z){return g[0]*x+g[1]*y+g[2]*z;} noise3D(x,y,z){let n0=0,n1=0,n2=0,n3=0,s=(x+y+z)/3,i=Math.floor(x+s),j=Math.floor(y+s),k=Math.floor(z+s);let t=(i+j+k)/6,X0=i-t,Y0=j-t,Z0=k-t,x0=x-X0,y0=y-Y0,z0=z-Z0;let i1,j1,k1,i2,j2,k2;if(x0>=y0){if(y0>=z0){i1=1;j1=0;k1=0;i2=1;j2=1;k2=0}else if(x0>=z0){i1=1;j1=0;k1=0;i2=1;j2=0;k2=1}else{i1=0;j1=0;k1=1;i2=1;j2=0;k2=1}}else{if(y0<z0){i1=0;j1=0;k1=1;i2=0;j2=1;k2=1}else if(x0<z0){i1=0;j1=1;k1=0;i2=0;j2=1;k2=1}else{i1=0;j1=1;k1=0;i2=1;j2=1;k2=0}}let x1=x0-i1+1/6,y1=y0-j1+1/6,z1=z0-k1+1/6,x2=x0-i2+2/6,y2=y0-j2+2/6,z2=z0-k2+2/6,x3=x0-1,y3=y0-1,z3=z0-1;let ii=i&255,jj=j&255,kk=k&255;let gi0=this.perm[ii+this.perm[jj+this.perm[kk]]]%12,gi1=this.perm[ii+i1+this.perm[jj+j1+this.perm[kk+k1]]]%12;let gi2=this.perm[ii+i2+this.perm[jj+j2+this.perm[kk+k2]]]%12,gi3=this.perm[ii+1+this.perm[jj+1+this.perm[kk+1]]]%12;let t0=0.6-x0*x0-y0*y0-z0*z0;if(t0>0){t0*=t0;n0=t0*t0*this.dot(this.grad3[gi0],x0,y0,z0)}let t1=0.6-x1*x1-y1*y1-z1*z1;if(t1>0){t1*=t1;n1=t1*t1*this.dot(this.grad3[gi1],x1,y1,z1)}let t2=0.6-x2*x2-y2*y2-z2*z2;if(t2>0){t2*=t2;n2=t2*t2*this.dot(this.grad3[gi2],x2,y2,z2)}let t3=0.6-x3*x3-y3*y3-z3*z3;if(t3>0){t3*=t3;n3=t3*t3*this.dot(this.grad3[gi3],x3,y3,z3)}return 32*(n0+n1+n2+n3);} }
+    let noise = new SimplexNoise(currentSeed);
+    function getHeight(x, z) { let off = currentBioma.seedOffset; return Math.max(0.3, noise.noise3D(x*0.17, z*0.17, (currentSeed+off)*0.008)*2.2 + noise.noise3D(x*0.4, z*0.4, (currentSeed+off+10)*0.02)*1.0 + (currentBioma===BIOMAS_ARRAY[2]?0.3:0.8)); }
+
+    // ========== GENERACIÓN DE TERRENO (restaurada) ==========
+    function getTerrainTexture() { const c = document.createElement('canvas'); c.width=512; c.height=512; const ctx=c.getContext('2d'); if(currentBioma===BIOMAS_ARRAY[0]){ctx.fillStyle='#5e8c4a';ctx.fillRect(0,0,512,512);ctx.fillStyle='#aa8b5c';for(let i=0;i<400;i++)ctx.fillRect(Math.random()*512,Math.random()*512,3,3);}else if(currentBioma===BIOMAS_ARRAY[1]){ctx.fillStyle='#d4eaff';ctx.fillRect(0,0,512,512);ctx.fillStyle='#bbddff';for(let i=0;i<300;i++)ctx.fillRect(Math.random()*512,Math.random()*512,4,4);}else{ctx.fillStyle='#aa4422';ctx.fillRect(0,0,512,512);ctx.fillStyle='#dd6633';for(let i=0;i<350;i++)ctx.fillRect(Math.random()*512,Math.random()*512,5,5);}const tex=new THREE.CanvasTexture(c);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(12,12);return tex; }
+    function generateTerrain() { if(terrainMesh)scene.remove(terrainMesh);const g=new THREE.PlaneGeometry(90,90,120,120);g.rotateX(-Math.PI/2);const p=g.attributes.position.array;for(let i=0;i<p.length;i+=3)p[i+1]=getHeight(p[i],p[i+2]);g.computeVertexNormals();terrainMesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:getTerrainTexture(),roughness:0.7}));terrainMesh.receiveShadow=true;scene.add(terrainMesh);scene.background=new THREE.Color(currentBioma.skyColor);scene.fog.color=new THREE.Color(currentBioma.fogColor); }
+    function generateTrees() { trees.forEach(t=>scene.remove(t.mesh));trees=[];let count=currentBioma===BIOMAS_ARRAY[2]?40:130;for(let i=0;i<count;i++){let a=(i*137.3+currentSeed)%360,r=18+(i*11)%45;let x=Math.cos(a*Math.PI/180)*r,z=Math.sin(a*Math.PI/180)*r;if(Math.abs(x)<6&&Math.abs(z)<6)continue;let yh=getHeight(x,z);const grp=new THREE.Group();let tc=currentBioma===BIOMAS_ARRAY[1]?0xaa9988:0xb87c4f;let fc=currentBioma===BIOMAS_ARRAY[1]?0xaaccdd:(currentBioma===BIOMAS_ARRAY[2]?0xcc6644:0x6baa5a);const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.75,1.2,5),new THREE.MeshStandardMaterial({color:tc}));tr.position.y=yh+0.6;tr.castShadow=true;const fo=new THREE.Mesh(new THREE.ConeGeometry(0.85,1.2,6),new THREE.MeshStandardMaterial({color:fc}));fo.position.y=yh+1.3;grp.add(tr,fo);grp.position.set(x,0,z);scene.add(grp);trees.push({mesh:grp,x,z,radius:0.7});} }
+
+    // ========== SPAWNS ==========
+    function spawnMuelleNieve() { muellesList.forEach(m=>{if(m.mesh)scene.remove(m.mesh);if(m.label)scene.remove(m.label);});muellesList=[];if(currentBioma!==BIOMAS_ARRAY[1])return;let x=28,z=-22,yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(3.0,0.6,2.5),new THREE.MeshStandardMaterial({color:0x8B5E3C})));g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.25,1.8,8),new THREE.MeshStandardMaterial({color:0xccbbaa})));const roof=new THREE.Mesh(new THREE.ConeGeometry(2.0,1.0,4),new THREE.MeshStandardMaterial({color:0xccccff}));roof.position.y=1.2;g.add(roof);g.position.set(x,yh,z);scene.add(g);const d=document.createElement('div');d.textContent='⛵ MUELLE NEVADO';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#aaccff';const l=new CSS2DObject(d);l.position.set(x,yh+2.2,z);scene.add(l);muellesList.push({mesh:g,label:l,x,z,radius:3.0}); }
+    function spawnCocineroLava() { cocinerosList.forEach(c=>{if(c.mesh)scene.remove(c.mesh);if(c.label)scene.remove(c.label);});cocinerosList=[];if(currentBioma!==BIOMAS_ARRAY[2])return;let x=-30,z=25,yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.8,1.4,8),new THREE.MeshStandardMaterial({color:0xffaa44})));const head=new THREE.Mesh(new THREE.SphereGeometry(0.6,16,16),new THREE.MeshStandardMaterial({color:0xffcc88}));head.position.y=1.1;g.add(head);const hat=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.6,0.7,8),new THREE.MeshStandardMaterial({color:0xffffff}));hat.position.y=1.8;g.add(hat);g.position.set(x,yh,z);scene.add(g);const d=document.createElement('div');d.textContent='👨‍🍳 COCINERO';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#ffcc88';const l=new CSS2DObject(d);l.position.set(x,yh+2.6,z);scene.add(l);cocinerosList.push({mesh:g,label:l,x,z,radius:3.0}); }
+    function spawnCoyote() { coyotesList.forEach(c=>{if(c.mesh)scene.remove(c.mesh);if(c.label)scene.remove(c.label);});coyotesList=[];if(gemsCollected>=(currentBiomaLevel+1))return;let x,z;do{x=(Math.random()-0.5)*70;z=(Math.random()-0.5)*70;}while(Math.hypot(x,z)<15);let yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.5,0.9,8),new THREE.MeshStandardMaterial({color:0xc4956b})));const hg=new THREE.Group();hg.position.y=0.7;hg.add(new THREE.Mesh(new THREE.ConeGeometry(0.35,0.5,6),new THREE.MeshStandardMaterial({color:0xc4956b})));g.add(hg);const gem=new THREE.Mesh(new THREE.OctahedronGeometry(0.22),new THREE.MeshStandardMaterial({color:0xff44ff,emissive:0x880088,roughness:0.3}));gem.position.y=0.3;g.add(gem);g.position.set(x,yh+0.1,z);scene.add(g);const d=document.createElement('div');d.textContent='🐺 COYOTE 💎';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#ffaaff;font-weight:bold';const l=new CSS2DObject(d);l.position.set(x,yh+1.6,z);scene.add(l);coyotesList.push({mesh:g,label:l,x,z,radius:2.0,given:false}); }
+    function spawnAldeaChamanes() { chamanesList.forEach(c=>{if(c.mesh)scene.remove(c.mesh);if(c.label)scene.remove(c.label);});chamanesList=[];if(currentBiomaLevel!==0||!window.aldeaDesbloqueada)return;let x=-32,z=18,yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.8,2.5,8),new THREE.MeshStandardMaterial({color:0x886644})));const roof=new THREE.Mesh(new THREE.ConeGeometry(2.0,1.5,8),new THREE.MeshStandardMaterial({color:0xaa88ff}));roof.position.y=1.8;g.add(roof);g.position.set(x,yh,z);scene.add(g);const d=document.createElement('div');d.textContent='🏕️ ANCIANO SABIO 🧙‍♂️';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#cc88ff;font-weight:bold';const l=new CSS2DObject(d);l.position.set(x,yh+3.2,z);scene.add(l);chamanesList.push({mesh:g,label:l,x,z,radius:3.0}); }
+
+    function spawnItems() {
+      items.forEach(i=>scene.remove(i.mesh));enemiesList.forEach(e=>scene.remove(e.mesh));sagesList.forEach(s=>{scene.remove(s.mesh);scene.remove(s.label);});shopsList.forEach(s=>{scene.remove(s.mesh);scene.remove(s.label);});casinosList.forEach(c=>{if(c.mesh)scene.remove(c.mesh);if(c.label)scene.remove(c.label);});
+      items=[];enemiesList=[];sagesList=[];shopsList=[];casinosList=[];
+      for(let i=0;i<55;i++){let a=Math.random()*Math.PI*2,r=12+Math.random()*40,x=Math.cos(a)*r,z=Math.sin(a)*r,yh=getHeight(x,z);let type=Math.random()<0.7?'coin':(Math.random()<0.5?'heart':'potion'),mesh;if(type==='coin')mesh=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.07,16,32),new THREE.MeshStandardMaterial({color:0xffcc44}));else if(type==='heart')mesh=new THREE.Mesh(new THREE.SphereGeometry(0.35,8,8),new THREE.MeshStandardMaterial({color:0xff5e7e}));else mesh=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.3,0.6,8),new THREE.MeshStandardMaterial({color:0xaa66ff}));mesh.position.set(x,yh+0.6,z);scene.add(mesh);items.push({mesh,x,z,radius:0.45,type});}
+      let ec=currentBioma===BIOMAS_ARRAY[2]?12:9;
+      for(let i=0;i<ec;i++){let a=Math.random()*Math.PI*2,r=20+Math.random()*35,x=Math.cos(a)*r,z=Math.sin(a)*r,yh=getHeight(x,z);let col=currentBioma===BIOMAS_ARRAY[1]?0x88aaff:(currentBioma===BIOMAS_ARRAY[2]?0xdd5533:0xaa3333);let mesh=new THREE.Mesh(new THREE.SphereGeometry(0.72,16,16),new THREE.MeshStandardMaterial({color:col}));mesh.position.set(x,yh+0.5,z);scene.add(mesh);let hp=12+Math.floor(currentBioma.enemyMult*4);enemiesList.push({mesh,x,z,radius:0.85,hp,maxHp:hp,atk:5+Math.floor(currentBioma.enemyMult*2),def:1});}
+      for(let i=0;i<5;i++){let a=Math.random()*Math.PI*2,r=25+Math.random()*30,x=Math.cos(a)*r,z=Math.sin(a)*r,yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,1.0,6),new THREE.MeshStandardMaterial({color:0x88aaff})));g.add(new THREE.Mesh(new THREE.ConeGeometry(0.7,0.6,6),new THREE.MeshStandardMaterial({color:0xaa88ff})));g.position.set(x,yh+0.2,z);scene.add(g);const d=document.createElement('div');d.textContent='🧙 SABIO';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#ccffaa';const l=new CSS2DObject(d);l.position.set(x,yh+1.2,z);scene.add(l);sagesList.push({mesh:g,label:l,x,z,radius:0.7,dialog:"✨ Las monedas abren portales"});}
+      for(let i=0;i<1;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*28,x=Math.cos(a)*r,z=Math.sin(a)*r,yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(1.2,0.8,1.2),new THREE.MeshStandardMaterial({color:0xaa8866})));g.add(new THREE.Mesh(new THREE.ConeGeometry(0.9,0.7,4),new THREE.MeshStandardMaterial({color:0xcc5533})));g.position.set(x,yh,z);scene.add(g);const d=document.createElement('div');d.textContent='🏠 CABAÑA';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#ffaa66';const l=new CSS2DObject(d);l.position.set(x,yh+1.2,z);scene.add(l);shopsList.push({mesh:g,label:l,x,z,radius:0.9});}
+      for(let i=0;i<1;i++){let a=Math.random()*Math.PI*2,r=25+Math.random()*30,x=Math.cos(a)*r,z=Math.sin(a)*r,yh=getHeight(x,z);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(1.5,0.9,1.5),new THREE.MeshStandardMaterial({color:0xdd88aa})));g.add(new THREE.Mesh(new THREE.ConeGeometry(1.1,0.8,6),new THREE.MeshStandardMaterial({color:0xffaa66})));g.position.set(x,yh,z);scene.add(g);const d=document.createElement('div');d.textContent='🎰 CASINO 🎲';d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:30px;color:#ffaaff';const l=new CSS2DObject(d);l.position.set(x,yh+1.4,z);scene.add(l);casinosList.push({mesh:g,label:l,x,z,radius:1.0});}
+      spawnMuelleNieve();spawnCocineroLava();spawnCoyote();spawnAldeaChamanes();
+    }
+
+    function generatePortals() {
+      portals.forEach(p=>{if(p.mesh)scene.remove(p.mesh);if(p.label)scene.remove(p.label);if(p.particles)p.particles.forEach(pt=>scene.remove(pt));});portals=[];
+      if(currentBiomaLevel<2){let cost=12+currentBiomaLevel*4,nextName=currentBiomaLevel===0?'NIEVE':'VOLCÁN',targetLevel=currentBiomaLevel+1;for(let i=0;i<2;i++){let a=(i*180+currentSeed*5)%360,r=38,x=Math.cos(a*Math.PI/180)*r,z=Math.sin(a*Math.PI/180)*r,yh=getHeight(x,z);const ring=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.13,32,64),new THREE.MeshStandardMaterial({color:0x33aaff,emissive:0x2266aa}));ring.rotation.x=Math.PI/2;ring.position.set(x,yh+0.7,z);scene.add(ring);const d=document.createElement('div');d.textContent=`🚪 PORTAL (${cost}🪙) → ${nextName}`;d.style.cssText='background:#000000aa;padding:4px 12px;border-radius:20px;color:cyan';const l=new CSS2DObject(d);l.position.set(x,yh+1.6,z);scene.add(l);portals.push({mesh:ring,label:l,x,z,radius:1.2,cost,targetLevel,isReturn:false,particles:[]});}}
+      else{let x=5,z=42,yh=getHeight(x,z);const ring=new THREE.Mesh(new THREE.TorusGeometry(1.5,0.18,32,64),new THREE.MeshStandardMaterial({color:0x44ff44,emissive:0x226622}));ring.rotation.x=Math.PI/2;ring.position.set(x,yh+0.7,z);scene.add(ring);let particles=[];for(let j=0;j<10;j++){const particle=new THREE.Mesh(new THREE.SphereGeometry(0.1,4,4),new THREE.MeshStandardMaterial({color:0xaaffaa,emissive:0x44ff44}));const angle=(j/10)*Math.PI*2;particle.position.set(x+Math.cos(angle)*2.0,yh+0.7+Math.sin(j*3)*0.5,z+Math.sin(angle)*2.0);particle.userData={baseX:x,baseZ:z,baseY:yh+0.7,angle,speed:0.5+Math.random()*0.5,amplitude:0.3+Math.random()*0.4};scene.add(particle);particles.push(particle);}const d=document.createElement('div');d.textContent='🏠 PORTAL DE RETORNO (5🪙) → BOSQUE';d.style.cssText='background:#000000aa;padding:6px 16px;border-radius:20px;color:#aaffaa;font-weight:bold;font-size:1.1rem;';const l=new CSS2DObject(d);l.position.set(x,yh+2.4,z);scene.add(l);portals.push({mesh:ring,label:l,x,z,radius:1.8,cost:5,targetLevel:0,isReturn:true,particles});let x2=-30,z2=-30,yh2=getHeight(x2,z2);const ring2=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.13,32,64),new THREE.MeshStandardMaterial({color:0xffaa44,emissive:0x664400}));ring2.rotation.x=Math.PI/2;ring2.position.set(x2,yh2+0.7,z2);scene.add(ring2);const d2=document.createElement('div');d2.textContent='🏆 PORTAL FINAL (30🪙) → VICTORIA';d2.style.cssText='background:#000000aa;padding:4px 12px;border-radius:20px;color:#ffcc88;font-weight:bold;';const l2=new CSS2DObject(d2);l2.position.set(x2,yh2+1.6,z2);scene.add(l2);portals.push({mesh:ring2,label:l2,x:x2,z:z2,radius:1.2,cost:30,targetLevel:3,isReturn:false,particles:[]});}
+    }
+
+    function createPlayer() { if(player)scene.remove(player);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.65,1.0,8),new THREE.MeshStandardMaterial({color:0x3355aa})));const cape=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.3,6),new THREE.MeshStandardMaterial({color:0xaa2222,side:THREE.DoubleSide}));cape.position.set(0,0.1,-0.3);cape.rotation.x=0.2;g.add(cape);const head=new THREE.Mesh(new THREE.SphereGeometry(0.55,16,16),new THREE.MeshStandardMaterial({color:0xffcc99}));head.position.y=0.95;g.add(head);const hb=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.55,0.3,8),new THREE.MeshStandardMaterial({color:0x442288}));hb.position.y=1.45;g.add(hb);const ht=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.8,8),new THREE.MeshStandardMaterial({color:0x442288}));ht.position.y=1.95;g.add(ht);g.position.set(0,getHeight(0,0)+0.35,0);scene.add(g);player=g; }
+    function updateHUD() { document.getElementById('coinVal').innerText=coins;document.getElementById('hpVal').innerText=`${heroHP}/${heroMaxHP}`;document.getElementById('potionVal').innerText=potions;document.getElementById('atkVal').innerText=heroAtk;document.getElementById('gemCount').innerText=gemsCollected; }
+
+    // ========== COMBATE (corregido) ==========
+    const arenaDiv=document.getElementById('fightingArena'),heroFill=document.getElementById('heroHealthFill'),enemyFill=document.getElementById('enemyHealthFill'),fightLogSpan=document.getElementById('fightLogMsg');let isFightingAnim=false;
+    function showFloatingDamage(v,h,t){const d=document.createElement('div');d.className='floating-damage';d.innerText=h?`+${v}❤️`:`-${v}💥`;d.style.color=h?'#aaffaa':'#ffaa66';const r=t.getBoundingClientRect();d.style.left=`${r.left+r.width/2-25}px`;d.style.top=`${r.top-20}px`;document.body.appendChild(d);setTimeout(()=>d.remove(),600);}
+    function showEffect(e,t){const ef=document.createElement('div');ef.className='effect-particle';ef.innerText=e;const r=t.getBoundingClientRect();ef.style.left=`${r.left+r.width/2-30}px`;ef.style.top=`${r.top+r.height/2-30}px`;document.body.appendChild(ef);setTimeout(()=>ef.remove(),400);}
+    function setLog(m){fightLogSpan.innerHTML=`🔥 ${m} 🔥`;}
+    function updateFightUI(){if(!currentEnemyRef)return;heroFill.style.width=`${Math.max(0,(heroHP/heroMaxHP)*100)}%`;document.getElementById('arenaHeroHP').innerText=heroHP;document.getElementById('arenaHeroMax').innerText=heroMaxHP;document.getElementById('arenaHeroDef').innerText=heroDef;enemyFill.style.width=`${Math.max(0,(currentEnemyRef.hp/currentEnemyRef.maxHp)*100)}%`;document.getElementById('arenaEnemyHP').innerText=currentEnemyRef.hp;document.getElementById('arenaEnemyMax').innerText=currentEnemyRef.maxHp;document.getElementById('arenaEnemyAtk').innerText=currentEnemyRef.atk;document.getElementById('heroFighterEmoji').innerHTML=heroHP>heroMaxHP/3?"⚔️🧙‍♂️✨":"😫🩸⚔️";document.getElementById('enemyFighterEmoji').innerHTML=currentEnemyRef.hp>currentEnemyRef.maxHp/2?"👹💢":"👺💀";}
+    function disableBtns(d){document.querySelectorAll('.fight-btn').forEach(b=>{if(d)b.classList.add('disabled');else b.classList.remove('disabled');});}
+    async function performHeroAttack(){if(isFightingAnim||!inCombat||!currentEnemyRef)return;isFightingAnim=true;disableBtns(true);const h=document.getElementById('heroFighter');h.classList.add('hero-attack-anim');setTimeout(()=>h.classList.remove('hero-attack-anim'),220);let dmg=Math.max(2,heroAtk-currentEnemyRef.def+Math.floor(Math.random()*6));currentEnemyRef.hp-=dmg;updateFightUI();showFloatingDamage(dmg,false,document.getElementById('enemyFighter'));setLog(`¡GOLPE! -${dmg} HP`);if(currentEnemyRef.hp<=0){await endFightVictory();return;}setTimeout(()=>{performEnemyTurn();isFightingAnim=false;disableBtns(false);},600);}
+    async function performHeroDefend(){if(isFightingAnim||!inCombat)return;isFightingAnim=true;disableBtns(true);const h=document.getElementById('heroFighter');h.classList.add('shield-anim');setTimeout(()=>h.classList.remove('shield-anim'),300);combatDefending=true;setLog("🛡️ DEFENSA ACTIVADA!");setTimeout(()=>{performEnemyTurn(true);isFightingAnim=false;disableBtns(false);},600);}
+    async function performHeroPotion(){if(isFightingAnim||!inCombat)return;if(potions<=0){setLog("❌ NO HAY POCIONES!");return;}if(heroHP>=heroMaxHP){setLog("❤️ VIDA LLENA");return;}isFightingAnim=true;disableBtns(true);const h=document.getElementById('heroFighter');h.classList.add('potion-anim');setTimeout(()=>h.classList.remove('potion-anim'),400);let heal=12;heroHP=Math.min(heroMaxHP,heroHP+heal);potions--;updateHUD();updateFightUI();showFloatingDamage(heal,true,h);setLog(`🧪 +${heal} HP`);setTimeout(()=>{performEnemyTurn();isFightingAnim=false;disableBtns(false);},600);}
+    function performEnemyTurn(skipDef=false){if(!inCombat||!currentEnemyRef||currentEnemyRef.hp<=0){isFightingAnim=false;disableBtns(false);return;}let db=(combatDefending&&!skipDef)?(heroDef+3):heroDef;let dmg=Math.max(2,currentEnemyRef.atk-db+Math.floor(Math.random()*5));if(combatDefending&&!skipDef)setLog(`🛡️ DEFENSA reduce a ${dmg}`);else setLog(`👹 ENEMIGO ATACA: -${dmg} HP`);combatDefending=false;const e=document.getElementById('enemyFighter');e.classList.add('enemy-attack-anim');setTimeout(()=>e.classList.remove('enemy-attack-anim'),220);heroHP-=dmg;if(heroHP<0)heroHP=0;updateFightUI();updateHUD();showFloatingDamage(dmg,false,document.getElementById('heroFighter'));if(heroHP<=0){endFightDefeat();}else{isFightingAnim=false;disableBtns(false);}}
+    async function endFightVictory(){inCombat=false;isFightingAnim=false;let rwd=8+Math.floor(Math.random()*10);coins+=rwd;if(Math.random()<0.3)potions++;updateHUD();setLog(`🏆 VICTORIA! +${rwd}🪙`);const idx=enemiesList.findIndex(e=>e===currentEnemyRef);if(idx!==-1){scene.remove(currentEnemyRef.mesh);enemiesList.splice(idx,1);}window.enemigosVencidos=(window.enemigosVencidos||0)+1;currentEnemyRef=null;MisionesManager.verificarTodas();setInteractionCooldown();setTimeout(()=>{arenaDiv.classList.add('hidden');},1200);}
+    function endFightDefeat(){inCombat=false;isFightingAnim=false;setLog("💀 DERROTA...");currentEnemyRef=null;setInteractionCooldown();setTimeout(()=>{arenaDiv.classList.add('hidden');resetCurrentBiome();},1500);}
+    function startFightingCombat(enemy){if(inCombat||!canInteract())return;inCombat=true;combatDefending=false;currentEnemyRef=enemy;arenaDiv.classList.remove('hidden');updateFightUI();setLog(`⚔️ ¡COMBATE!`);disableBtns(false);}
+
+    // ========== BATTLESHIP ==========
+    const BS_ROWS=4,BS_COLS=5;let bsPlayerBoard,bsEnemyBoard,bsEnemyShips,bsPlayerShips,bsPlayerHitsOnEnemy,bsEnemyHitsOnPlayer,bsPlayerReady,bsGameOver,bsPlayerTurn,bsPlacementMode,bsPlayerShipsSunk,bsEnemyShipsSunk,selectedShipIndex,placementTempPositions;
+    function getEnemyShipPositions(){return[{name:'Navío A',size:3,sunk:false,positions:[{row:3,col:3},{row:3,col:2},{row:3,col:4}]},{name:'Navío B',size:3,sunk:false,positions:[{row:1,col:2},{row:1,col:1},{row:1,col:3}]},{name:'Navío C',size:2,sunk:false,positions:[{row:0,col:4},{row:0,col:3}]}];}
+    function resetBattleshipState(){bsPlayerBoard=Array(BS_ROWS).fill().map(()=>Array(BS_COLS).fill('empty'));bsEnemyBoard=Array(BS_ROWS).fill().map(()=>Array(BS_COLS).fill('empty'));bsEnemyShips=getEnemyShipPositions();bsPlayerShips=[{name:'Tu Navío 1',size:3,positions:[],sunk:false},{name:'Tu Navío 2',size:3,positions:[],sunk:false},{name:'Tu Navío 3',size:2,positions:[],sunk:false}];bsPlayerHitsOnEnemy=0;bsEnemyHitsOnPlayer=0;bsPlayerReady=false;bsGameOver=false;bsPlayerTurn=true;bsPlacementMode=true;bsPlayerShipsSunk=0;bsEnemyShipsSunk=0;selectedShipIndex=0;placementTempPositions=[];document.getElementById('bs-ready-btn').classList.remove('hidden');document.getElementById('bs-ready-btn').style.background='#ffb347';document.getElementById('bs-status-msg').innerText='🚢 Coloca tus naves en el tablero de abajo (click en celdas adyacentes)';}
+    function initBattleship(){resetBattleshipState();renderBSGrids();}
+    function renderBSGrids(){const rg=document.getElementById('bs-radar-grid');rg.innerHTML='';for(let r=0;r<BS_ROWS;r++){for(let c=0;c<BS_COLS;c++){const cell=document.createElement('div');cell.className='bs-cell';cell.dataset.row=r;cell.dataset.col=c;const v=bsEnemyBoard[r][c];if(v==='hit'){cell.classList.add('hit');cell.innerText='💥';}else if(v==='miss'){cell.classList.add('miss');cell.innerText='💧';}else if(v==='sunk'){cell.classList.add('sunk');cell.innerText='💀';}else{cell.innerText='🌊';}if(!bsPlacementMode&&bsPlayerTurn&&!bsGameOver&&v==='empty'){cell.style.cursor='pointer';cell.onclick=()=>playerFire(r,c);}else{cell.style.cursor='default';}rg.appendChild(cell);}}const pg=document.getElementById('bs-player-grid');pg.innerHTML='';for(let r=0;r<BS_ROWS;r++){for(let c=0;c<BS_COLS;c++){const cell=document.createElement('div');cell.className='bs-cell';cell.dataset.row=r;cell.dataset.col=c;const v=bsPlayerBoard[r][c];if(v==='ship'){cell.classList.add('ship-placed');cell.innerText='🚢';}else if(v==='hit'){cell.classList.add('ship-hit');cell.innerText='💥';}else if(v==='miss'){cell.classList.add('miss');cell.innerText='💧';}else if(v==='sunk'){cell.classList.add('ship-sunk');cell.innerText='💀';}else{cell.innerText='⬜';}if(bsPlacementMode&&!bsPlayerReady){cell.style.cursor='pointer';cell.onclick=()=>placePlayerShip(r,c);}else{cell.style.cursor='default';}pg.appendChild(cell);}}}
+    function placePlayerShip(r,c){if(!bsPlacementMode||bsPlayerReady||bsPlayerBoard[r][c]==='ship')return;const ship=bsPlayerShips[selectedShipIndex];if(placementTempPositions.length>=ship.size)return;if(placementTempPositions.length>0){const last=placementTempPositions[placementTempPositions.length-1];if(!((Math.abs(r-last.row)===1&&c===last.col)||(Math.abs(c-last.col)===1&&r===last.row))){document.getElementById('bs-status-msg').innerText='⚠️ Las celdas deben ser adyacentes (horizontal o vertical)';return;}}placementTempPositions.push({row:r,col:c});bsPlayerBoard[r][c]='ship';renderBSGrids();if(placementTempPositions.length===ship.size){ship.positions=[...placementTempPositions];selectedShipIndex++;placementTempPositions=[];if(selectedShipIndex>=bsPlayerShips.length){document.getElementById('bs-status-msg').innerText='✅ ¡Todas las naves colocadas! Presiona "LISTO PARA LA BATALLA"';document.getElementById('bs-ready-btn').style.background='#4caf50';}else{document.getElementById('bs-status-msg').innerText=`Coloca tu ${bsPlayerShips[selectedShipIndex].name} (${bsPlayerShips[selectedShipIndex].size} espacios)`;}}else{document.getElementById('bs-status-msg').innerText=`Colocando ${ship.name}: ${placementTempPositions.length}/${ship.size} (click en celda adyacente)`;}}
+    function bsResetPlacement(){if(!bsPlacementMode||bsPlayerReady)return;bsPlayerBoard=Array(BS_ROWS).fill().map(()=>Array(BS_COLS).fill('empty'));bsPlayerShips.forEach(s=>{s.positions=[];s.sunk=false;});selectedShipIndex=0;placementTempPositions=[];document.getElementById('bs-ready-btn').style.background='#ffb347';document.getElementById('bs-status-msg').innerText='🚢 Coloca tus naves en el tablero de abajo (click en celdas adyacentes)';renderBSGrids();}
+    function bsReady(){if(selectedShipIndex<bsPlayerShips.length){document.getElementById('bs-status-msg').innerText='⚠️ Debes colocar todas tus naves primero';return;}bsPlayerReady=true;bsPlacementMode=false;document.getElementById('bs-ready-btn').classList.add('hidden');document.getElementById('bs-status-msg').innerText='🎯 ¡TU TURNO! Dispara en el RADAR enemigo';renderBSGrids();}
+    function playerFire(r,c){if(!bsPlayerTurn||bsGameOver||bsPlacementMode||bsEnemyBoard[r][c]!=='empty')return;let hit=false;for(const ship of bsEnemyShips){for(const pos of ship.positions){if(pos.row===r&&pos.col===c){hit=true;bsEnemyBoard[r][c]='hit';bsPlayerHitsOnEnemy++;if(!ship.sunk&&ship.positions.every(p=>bsEnemyBoard[p.row][p.col]==='hit')){ship.sunk=true;bsEnemyShipsSunk++;ship.positions.forEach(p=>{bsEnemyBoard[p.row][p.col]='sunk';});document.getElementById('bs-status-msg').innerText=`💀 ¡Hundiste ${ship.name}!`;}else{document.getElementById('bs-status-msg').innerText='💥 ¡IMPACTO!';}break;}}if(hit)break;}if(!hit){bsEnemyBoard[r][c]='miss';document.getElementById('bs-status-msg').innerText='💧 Agua...';}renderBSGrids();if(bsEnemyShipsSunk>=3){bsGameOver=true;document.getElementById('bs-status-msg').innerText='🏆 ¡VICTORIA TOTAL! Has hundido toda la flota enemiga.';window.battleshipGanado=true;MisionesManager.verificarTodas();setTimeout(()=>closeBattleship(),2500);return;}bsPlayerTurn=false;document.getElementById('bs-status-msg').innerText='🤖 Turno de la computadora...';renderBSGrids();setTimeout(()=>enemyTurn(),800);}
+    function enemyTurn(){if(bsGameOver)return;let available=[];for(let r=0;r<BS_ROWS;r++)for(let c=0;c<BS_COLS;c++)if(bsPlayerBoard[r][c]==='empty'||bsPlayerBoard[r][c]==='ship')available.push({row:r,col:c});if(!available.length)return;const shot=available[Math.floor(Math.random()*available.length)];if(bsPlayerBoard[shot.row][shot.col]==='ship'){bsPlayerBoard[shot.row][shot.col]='hit';bsEnemyHitsOnPlayer++;for(const ship of bsPlayerShips){if(!ship.sunk&&ship.positions.every(p=>bsPlayerBoard[p.row][p.col]==='hit')){ship.sunk=true;bsPlayerShipsSunk++;ship.positions.forEach(p=>{bsPlayerBoard[p.row][p.col]='sunk';});}}}else{bsPlayerBoard[shot.row][shot.col]='miss';}renderBSGrids();if(bsPlayerShipsSunk>=3){bsGameOver=true;document.getElementById('bs-status-msg').innerText='💀 DERROTA... La computadora hundió tu flota.';setTimeout(()=>closeBattleship(),2500);return;}bsPlayerTurn=true;document.getElementById('bs-status-msg').innerText='🎯 ¡TU TURNO! Dispara en el RADAR enemigo';renderBSGrids();}
+    function openBattleship(){if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||inScore||!canInteract())return;inBattleship=true;initBattleship();document.getElementById('battleshipUI').classList.remove('hidden');}
+    function closeBattleship(){if(!inBattleship)return;inBattleship=false;bsGameOver=true;document.getElementById('battleshipUI').classList.add('hidden');setInteractionCooldown();if(player&&muellesList.length){const m=muellesList[0];const a=Math.atan2(player.position.z-m.z,player.position.x-m.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+
+    // ========== TIENDA, CASINO, CHAMAN ==========
+    function closeSlotMachine(){if(!inSlotMachine)return;inSlotMachine=false;document.getElementById('slotUI').classList.add('hidden');setInteractionCooldown();if(player&&casinosList.length){const c=casinosList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openSlotMachine(){if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||inScore||!canInteract())return;inSlotMachine=true;document.getElementById('slotUI').classList.remove('hidden');}
+    function closeShop(){if(!inShop)return;inShop=false;document.getElementById('shopUI').classList.add('hidden');setInteractionCooldown();if(player&&shopsList.length){const s=shopsList[0];const a=Math.atan2(player.position.z-s.z,player.position.x-s.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openShop(){if(inCombat||inShop||inBattleship||inChaman||inScore||!canInteract())return;inShop=true;document.getElementById('shopUI').classList.remove('hidden');document.getElementById('shopCoins').innerText=coins;}
+    function buyHealth(){if(coins>=12&&heroHP<heroMaxHP){coins-=12;heroHP=Math.min(heroMaxHP,heroHP+10);updateHUD();document.getElementById('shopCoins').innerText=coins;MisionesManager.verificarTodas();}}
+    function buyPotion(){if(coins>=8){coins-=8;potions++;updateHUD();document.getElementById('shopCoins').innerText=coins;}}
+    function openChaman(){if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||inScore||!canInteract())return;inChaman=true;const todas=MisionesManager.completadas.size>=MisionesManager.misiones.length-1;const gems=gemsCollected>=3;document.getElementById('chaman-dialog').innerText=todas&&gems?'"Has completado todas las misiones y reunido las 3 gemas... ¡Eres digno de la Medalla del Ganador!" 🍄':`"Aún te falta camino... Misiones: ${MisionesManager.completadas.size}/${MisionesManager.misiones.length-1}, Gemas: ${gemsCollected}/3"`;if(todas&&gems&&!window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ MEDALLA DEL GANADOR ✨🍄';window.medallaObtenida=true;MisionesManager.verificarTodas();}else if(window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ YA TIENES LA MEDALLA ✨🍄';}else{document.getElementById('chaman-reward').innerHTML='🔒';}document.getElementById('chamanUI').classList.remove('hidden');}
+    function closeChaman(){if(!inChaman)return;inChaman=false;document.getElementById('chamanUI').classList.add('hidden');setInteractionCooldown();if(player&&chamanesList.length){const c=chamanesList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+
+    // ========== MODAL DE PUNTUACIÓN ==========
+    function mostrarModalPuntuacion() {
+      inScore = true;
+      document.getElementById('scoreValue').innerText = coins; // O cualquier cálculo de puntuación
+      document.getElementById('scoreUI').classList.remove('hidden');
+      document.getElementById('scoreFeedback').innerText = '';
+    }
+    async function enviarScore() {
+      const username = document.getElementById('scoreUsername').value.trim();
+      if (!username) {
+        document.getElementById('scoreFeedback').innerText = '⚠️ Introduce un nombre';
+        return;
+      }
+      const score = coins; // Usamos monedas como puntuación
+      const exito = await enviarPuntuacion(username, score);
+      if (exito) {
+        document.getElementById('scoreFeedback').innerText = '✅ ¡Puntuación enviada!';
+      } else {
+        document.getElementById('scoreFeedback').innerText = '❌ Error al enviar. Intenta de nuevo.';
+      }
+    }
+    function cerrarScore() {
+      inScore = false;
+      document.getElementById('scoreUI').classList.add('hidden');
+    }
+
+    // ========== INTERACCIONES ==========
+    function updateInteractions(){
+      if(!player||inCombat||inShop||inSlotMachine||inBattleship||inChaman||inScore||isAnimating||!canInteract())return;
+      const px=player.position.x,pz=player.position.z;
+      for(let i=0;i<items.length;i++){const it=items[i];if(Math.hypot(px-it.x,pz-it.z)<0.85){scene.remove(it.mesh);if(it.type==='coin')coins++;else if(it.type==='heart')heroHP=Math.min(heroMaxHP,heroHP+8);else potions++;items.splice(i,1);updateHUD();MisionesManager.verificarTodas();i--;}}
+      for(const s of sagesList){if(Math.hypot(px-s.x,pz-s.z)<1.2){const msg=document.getElementById('sageMessage');msg.innerText=`🧙 "${s.dialog}"`;msg.classList.remove('hidden');setTimeout(()=>msg.classList.add('hidden'),3500);scene.remove(s.label);scene.remove(s.mesh);sagesList=sagesList.filter(ss=>ss!==s);break;}}
+      for(const e of enemiesList){if(Math.hypot(px-e.x,pz-e.z)<1.2&&!inCombat){startFightingCombat(e);return;}}
+      for(const sh of shopsList){if(Math.hypot(px-sh.x,pz-sh.z)<1.2&&!inShop){openShop();return;}}
+      for(const c of casinosList){if(Math.hypot(px-c.x,pz-c.z)<1.2&&!inSlotMachine){openSlotMachine();return;}}
+      for(const m of muellesList){if(Math.hypot(px-m.x,pz-m.z)<2.0&&!inBattleship){openBattleship();return;}}
+      for(const c of cocinerosList){if(Math.hypot(px-c.x,pz-c.z)<2.0){if(!window.recetaObtenida){window.recetaObtenida=true;MisionesManager.verificarTodas();const msg=document.getElementById('sageMessage');msg.innerText='👨‍🍳 "La receta secreta: Datil 5, Cocoa 2, Elote 1... ¡D5, C2, E1! Úsala en el Battleship."';msg.classList.remove('hidden');setTimeout(()=>msg.classList.add('hidden'),5000);}return;}}
+      for(const c of coyotesList){if(Math.hypot(px-c.x,pz-c.z)<2.2&&!c.given){c.given=true;gemsCollected++;updateHUD();scene.remove(c.mesh);scene.remove(c.label);coyotesList=coyotesList.filter(cc=>cc!==c);MisionesManager.verificarTodas();const msg=document.getElementById('sageMessage');msg.innerText='🐺💎 ¡COYOTE! Te da una gema mágica.';msg.classList.remove('hidden');setTimeout(()=>msg.classList.add('hidden'),3500);return;}}
+      for(const ch of chamanesList){if(Math.hypot(px-ch.x,pz-ch.z)<2.5){openChaman();return;}}
+      for(const p of portals){if(Math.hypot(px-p.x,pz-p.z)<p.radius&&coins>=p.cost&&!inCombat&&canInteract()){coins-=p.cost;updateHUD();if(!p.isReturn){window.portalesUsados=(window.portalesUsados||0)+1;}MisionesManager.verificarTodas();if(p.targetLevel===3){alert("🏆 ¡HAS COMPLETADO LOS 3 BIOMAS! 🏆\nReiniciando...");resetFullGame();}else{setCurrentBiome(p.targetLevel);}break;}}
+      player.position.y=getHeight(px,pz)+0.35;
+    }
+
+    function setCurrentBiome(level){currentBiomaLevel=level;currentBioma=BIOMAS_ARRAY[level];document.getElementById('biomeName').innerText=currentBioma.name;setInteractionCooldown();regenerateWorldByBiome();}
+    function regenerateWorldByBiome(){currentSeed=Math.floor(Math.random()*10000);noise.seed(currentSeed);generateTerrain();generateTrees();spawnItems();generatePortals();player.position.set(0,getHeight(0,0)+0.35,0);updateHUD();MisionesManager.renderizar();}
+    function resetCurrentBiome(){heroHP=heroMaxHP=20+currentBiomaLevel*2;heroAtk=5+currentBiomaLevel;coins=10;potions=1;inCombat=inShop=inSlotMachine=inBattleship=inChaman=inScore=false;arenaDiv.classList.add('hidden');setInteractionCooldown();regenerateWorldByBiome();}
+    function resetFullGame(){currentBiomaLevel=0;currentBioma=BIOMAS_ARRAY[0];window.enemigosVencidos=0;window.portalesUsados=0;window.battleshipGanado=false;window.recetaObtenida=false;window.aldeaDesbloqueada=false;window.medallaObtenida=false;window.scoreShown=false;gemsCollected=0;MisionesManager.completadas.clear();document.getElementById('biomeName').innerText=currentBioma.name;resetCurrentBiome();}
+
+    function updatePlayerMovement(dt){if(!player||inCombat||inShop||inSlotMachine||inBattleship||inChaman||inScore||isAnimating)return;if(!moveActiveJoystick){let kx=0,kz=0;if(keysPressed['a']||keysPressed['arrowleft'])kx-=1;if(keysPressed['d']||keysPressed['arrowright'])kx+=1;if(keysPressed['w']||keysPressed['arrowup'])kz-=1;if(keysPressed['s']||keysPressed['arrowdown'])kz+=1;moveInput.x=kx;moveInput.z=kz;}if(!moveInput.x&&!moveInput.z)return;const spd=playerSpeed*dt;const fwd=new THREE.Vector3(camera.getWorldDirection(new THREE.Vector3()).x,0,camera.getWorldDirection(new THREE.Vector3()).z).normalize();const right=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0)).normalize();const move=new THREE.Vector3(0,0,0);move.addScaledVector(right,moveInput.x);move.addScaledVector(fwd,-moveInput.z);move.normalize().multiplyScalar(spd);player.position.add(move);player.rotation.y=Math.atan2(move.x,move.z);player.position.x=Math.min(43,Math.max(-43,player.position.x));player.position.z=Math.min(43,Math.max(-43,player.position.z));}
+    function updateCameraFollow(){const r=zoomDistance;const x=Math.sin(cameraAngleX)*r,z=Math.cos(cameraAngleX)*r;if(player){camera.position.set(player.position.x+x,player.position.y+4.0+cameraAngleY*2.5,player.position.z+z);camera.lookAt(player.position);}}
+
+    function initJoysticks(){const mj=document.getElementById('move-joystick'),mt=document.getElementById('moveThumb'),cj=document.getElementById('camera-joystick'),ct=document.getElementById('cameraThumb');let mc={x:0,y:0},cc={x:0,y:0};mj.addEventListener('touchstart',e=>{e.preventDefault();moveActiveJoystick=true;const r=mj.getBoundingClientRect();mc.x=r.left+r.width/2;mc.y=r.top+r.height/2;});mj.addEventListener('mousedown',e=>{moveActiveJoystick=true;const r=mj.getBoundingClientRect();mc.x=r.left+r.width/2;mc.y=r.top+r.height/2;});cj.addEventListener('touchstart',e=>{e.preventDefault();camActiveJoystick=true;const r=cj.getBoundingClientRect();cc.x=r.left+r.width/2;cc.y=r.top+r.height/2;});cj.addEventListener('mousedown',e=>{camActiveJoystick=true;const r=cj.getBoundingClientRect();cc.x=r.left+r.width/2;cc.y=r.top+r.height/2;});const hm=(cx,cy,isMove)=>{if(isMove&&moveActiveJoystick){let dx=(cx-mc.x)/45,dy=(cy-mc.y)/45;dx=Math.min(1,Math.max(-1,dx));dy=Math.min(1,Math.max(-1,dy));mt.style.transform=`translate(calc(-50% + ${dx*35}px), calc(-50% + ${dy*35}px))`;moveInput.x=dx;moveInput.z=dy;}if(!isMove&&camActiveJoystick){let dx=(cx-cc.x)/45,dy=(cy-cc.y)/45;dx=Math.min(1,Math.max(-1,dx));dy=Math.min(1,Math.max(-1,dy));ct.style.transform=`translate(calc(-50% + ${dx*35}px), calc(-50% + ${dy*35}px))`;cameraAngleX+=dx*0.035;cameraAngleY+=dy*0.03;cameraAngleY=Math.min(1.3,Math.max(0.3,cameraAngleY));}};window.addEventListener('touchmove',e=>{if(moveActiveJoystick||camActiveJoystick){e.preventDefault();const t=e.touches[0];hm(t.clientX,t.clientY,moveActiveJoystick);if(camActiveJoystick)hm(t.clientX,t.clientY,false);}});window.addEventListener('mousemove',e=>{hm(e.clientX,e.clientY,moveActiveJoystick);if(camActiveJoystick)hm(e.clientX,e.clientY,false);});const rm=()=>{moveActiveJoystick=false;mt.style.transform='translate(-50%,-50%)';moveInput={x:0,z:0};};const rc=()=>{camActiveJoystick=false;ct.style.transform='translate(-50%,-50%)';};window.addEventListener('touchend',()=>{rm();rc();});window.addEventListener('mouseup',()=>{rm();rc();});}
+    function animatePortalParticles(){for(const p of portals){if(p.particles){p.particles.forEach(pt=>{if(pt.userData){const ud=pt.userData;ud.angle+=ud.speed*0.016;pt.position.x=ud.baseX+Math.cos(ud.angle)*2.0;pt.position.z=ud.baseZ+Math.sin(ud.angle)*2.0;pt.position.y=ud.baseY+Math.sin(ud.angle*3)*ud.amplitude;}});}}}
+
+    // ========== EVENTOS ==========
+    document.getElementById('closeSlotBtn').addEventListener('click',closeSlotMachine);
+    document.getElementById('closeShop').addEventListener('click',closeShop);
+    document.getElementById('attack-btn').addEventListener('click',rangedAttack);
+    document.getElementById('buyHealth').onclick=buyHealth;
+    document.getElementById('buyPotion').onclick=buyPotion;
+    document.getElementById('spinBtn').onclick=spinSlot;
+    document.getElementById('fightAttackBtn').onclick=()=>{if(inCombat&&!isFightingAnim)performHeroAttack();};
+    document.getElementById('fightDefendBtn').onclick=()=>{if(inCombat&&!isFightingAnim)performHeroDefend();};
+    document.getElementById('fightPotionBtn').onclick=()=>{if(inCombat&&!isFightingAnim)performHeroPotion();};
+    document.getElementById('closeBattleship').addEventListener('click',closeBattleship);
+    document.getElementById('bs-ready-btn').addEventListener('click',bsReady);
+    document.getElementById('bs-reset-placement-btn').addEventListener('click',bsResetPlacement);
+    document.getElementById('closeChaman').addEventListener('click',closeChaman);
+    document.getElementById('sendScoreBtn').addEventListener('click',enviarScore);
+    document.getElementById('closeScoreBtn').addEventListener('click',cerrarScore);
+    document.getElementById('misiones-btn').addEventListener('click',()=>{const p=document.getElementById('misiones-panel');p.classList.toggle('hidden');MisionesManager.renderizar();});
+    document.getElementById('cerrar-misiones').addEventListener('click',()=>{document.getElementById('misiones-panel').classList.add('hidden');});
+
+    function rangedAttack(){if(inCombat||projectileCooldown>0||!player)return;projectileCooldown=0.7;const fwd=new THREE.Vector3(0,0,1).applyQuaternion(player.quaternion);const proj=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8),new THREE.MeshStandardMaterial({color:0xffaa44}));proj.position.copy(player.position.clone().add(new THREE.Vector3(0,1,0)));scene.add(proj);let life=0;function anim(){life+=0.12;proj.position.addScaledVector(fwd,0.65);for(let i=0;i<enemiesList.length;i++){const e=enemiesList[i];if(proj.position.distanceTo(e.mesh.position)<1.3){scene.remove(proj);e.hp-=heroAtk+2;if(e.hp<=0){scene.remove(e.mesh);enemiesList.splice(i,1);coins+=3;updateHUD();window.enemigosVencidos=(window.enemigosVencidos||0)+1;MisionesManager.verificarTodas();}return;}}if(life<2.2&&proj.position.length()<55)requestAnimationFrame(anim);else scene.remove(proj);}requestAnimationFrame(anim);}
+    const slotEmojis=['🍒','🍋','🍊','🍉','⭐','💎'];
+    function spinSlot(){if(coins<5){document.getElementById('slotResultMsg').innerHTML='❌ Necesitas 5 🪙';return;}coins-=5;updateHUD();const r1=document.getElementById('reel1'),r2=document.getElementById('reel2'),r3=document.getElementById('reel3');let spins=8;let interval=setInterval(()=>{r1.textContent=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];r2.textContent=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];r3.textContent=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];spins--;if(spins<=0){clearInterval(interval);let a,b,c;if(Math.random()<0.2){const j=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];a=b=c=j;}else{a=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];b=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];c=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];if(a!==b&&b!==c&&a!==c&&Math.random()<0.4)b=a;}r1.textContent=a;r2.textContent=b;r3.textContent=c;if(a===b&&b===c){let premios=[{text:"💰 JACKPOT +25 MONEDAS",action:()=>{coins+=25;}},{text:"❤️ JACKPOT +12 VIDAS",action:()=>{heroHP=Math.min(heroMaxHP,heroHP+12);}},{text:"🧪 JACKPOT +4 POCIONES",action:()=>{potions+=4;}}];let p=premios[Math.floor(Math.random()*premios.length)];p.action();document.getElementById('slotResultMsg').innerHTML=`🎉✨ ${p.text} ✨🎉`;updateHUD();}else if(a===b||b===c||a===c){coins+=3;updateHUD();document.getElementById('slotResultMsg').innerHTML='🎲 Dos iguales! +3 🪙';}else{document.getElementById('slotResultMsg').innerHTML='😞 Sin suerte...';}MisionesManager.verificarTodas();}},70);}
+
+    let lastFrame=performance.now();
+    function gameLoop(){const now=performance.now(),dt=Math.min(0.033,(now-lastFrame)/1000);lastFrame=now;if(projectileCooldown>0)projectileCooldown-=dt;updatePlayerMovement(dt);updateInteractions();updateCameraFollow();items.forEach(i=>{if(i.mesh)i.mesh.rotation.y+=0.03;});animatePortalParticles();renderer.render(scene,camera);labelRenderer.render(scene,camera);requestAnimationFrame(gameLoop);}
+    function init(){initJoysticks();generateTerrain();generateTrees();spawnItems();generatePortals();createPlayer();updateHUD();MisionesManager.renderizar();gameLoop();}
+    init();
+  </script>
+</body>
+</html>
