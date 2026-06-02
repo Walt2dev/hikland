@@ -80,6 +80,7 @@
     #score-name-input { padding: 12px; border-radius: 40px; border: none; font-size: 1rem; width: 70%; background: #2d2d3a; color: white; text-align: center; }
     @media (max-width: 700px) { .joystick { width: 100px; height: 100px; bottom: 60px; } #move-joystick { left: 20px; } #camera-joystick { right: 20px; } .slot-reel { font-size: 2.5rem; min-width: 70px; } .fighter-emoji { font-size: 4rem; } .fight-btn { font-size: 1.2rem; padding: 8px 18px; } .bs-cell { font-size: 1.2rem; min-width: 22px; min-height: 22px; } }
   </style>
+  <script src="score.js"></script>
 </head>
 <body>
   <div id="hud-container">
@@ -147,9 +148,6 @@
   </script>
 
   <script>
-
-    // ==================== SISTEMA DE PUNTUACIONES (con proxy CORS) ====================
-;(function(){const u="https://script.google.com/macros/s/AKfycbzWkyqj5-BcffEGSb3zqU3ZlGKHdhJ6n1Gj3aTsz9ckwbkj4VR36ILBQdmSrXmGabs4/exec",k="тостада_де_кесо_кон_агуакате";window.enviarPuntuacion=async(n,s)=>{try{await fetch(u,{method:"POST",body:JSON.stringify({username:n,score:s,secretKey:k}),headers:{"Content-Type":"application/json"},mode:"no-cors"});return true}catch(e){console.error(e);return false}}})();    
     // Ranking local (guardado en localStorage)
     let rankingLocal = [];
     const STORAGE_KEY = "game_ranking_biomas";
