@@ -142,8 +142,6 @@
     import * as THREE from 'three';
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-
-
     // ========== SISTEMA DE MISIONES ==========
     const MisionesManager = {
       misiones: [], completadas: new Set(),
@@ -152,7 +150,6 @@
         let alguna = false;
         this.misiones.forEach(m => { if (!this.completadas.has(m.id) && m.condicion()) { this.completadas.add(m.id); alguna = true; if (m.recompensa) m.recompensa(); this.mostrarNotificacion(`✅ Misión: ${m.descripcion} (+${m.recompensaTexto})`); } });
         if (alguna) { this.renderizar(); updateHUD(); }
-        // Si se completa la medalla, mostramos el modal de puntuación
         if (window.medallaObtenida && !window.scoreShown) {
           window.scoreShown = true;
           setTimeout(() => mostrarModalPuntuacion(), 1500);
@@ -198,6 +195,7 @@
     let coins = 25, heroHP = 24, heroMaxHP = 24, heroAtk = 6, heroDef = 2, potions = 2;
     let inCombat = false, inShop = false, inSlotMachine = false, inBattleship = false, inChaman = false, inScore = false, isAnimating = false;
     let currentEnemyRef = null, combatDefending = false;
+    let combatTimeout = null; // Para cancelar el turno enemigo si el combate termina abruptamente
     let terrainMesh, trees = [], items = [], enemiesList = [], sagesList = [], shopsList = [], casinosList = [], muellesList = [], cocinerosList = [], coyotesList = [], chamanesList = [], portals = [], player;
     let moveInput = { x: 0, z: 0 }, playerSpeed = 8.0, cameraAngleX = 0, cameraAngleY = 0.85, zoomDistance = 11.5, projectileCooldown = 0;
 
@@ -210,7 +208,7 @@
     let noise = new SimplexNoise(currentSeed);
     function getHeight(x, z) { let off = currentBioma.seedOffset; return Math.max(0.3, noise.noise3D(x*0.17, z*0.17, (currentSeed+off)*0.008)*2.2 + noise.noise3D(x*0.4, z*0.4, (currentSeed+off+10)*0.02)*1.0 + (currentBioma===BIOMAS_ARRAY[2]?0.3:0.8)); }
 
-    // ========== GENERACIÓN DE TERRENO (restaurada) ==========
+    // ========== GENERACIÓN DE TERRENO ==========
     function getTerrainTexture() { const c = document.createElement('canvas'); c.width=512; c.height=512; const ctx=c.getContext('2d'); if(currentBioma===BIOMAS_ARRAY[0]){ctx.fillStyle='#5e8c4a';ctx.fillRect(0,0,512,512);ctx.fillStyle='#aa8b5c';for(let i=0;i<400;i++)ctx.fillRect(Math.random()*512,Math.random()*512,3,3);}else if(currentBioma===BIOMAS_ARRAY[1]){ctx.fillStyle='#d4eaff';ctx.fillRect(0,0,512,512);ctx.fillStyle='#bbddff';for(let i=0;i<300;i++)ctx.fillRect(Math.random()*512,Math.random()*512,4,4);}else{ctx.fillStyle='#aa4422';ctx.fillRect(0,0,512,512);ctx.fillStyle='#dd6633';for(let i=0;i<350;i++)ctx.fillRect(Math.random()*512,Math.random()*512,5,5);}const tex=new THREE.CanvasTexture(c);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(12,12);return tex; }
     function generateTerrain() { if(terrainMesh)scene.remove(terrainMesh);const g=new THREE.PlaneGeometry(90,90,120,120);g.rotateX(-Math.PI/2);const p=g.attributes.position.array;for(let i=0;i<p.length;i+=3)p[i+1]=getHeight(p[i],p[i+2]);g.computeVertexNormals();terrainMesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:getTerrainTexture(),roughness:0.7}));terrainMesh.receiveShadow=true;scene.add(terrainMesh);scene.background=new THREE.Color(currentBioma.skyColor);scene.fog.color=new THREE.Color(currentBioma.fogColor); }
     function generateTrees() { trees.forEach(t=>scene.remove(t.mesh));trees=[];let count=currentBioma===BIOMAS_ARRAY[2]?40:130;for(let i=0;i<count;i++){let a=(i*137.3+currentSeed)%360,r=18+(i*11)%45;let x=Math.cos(a*Math.PI/180)*r,z=Math.sin(a*Math.PI/180)*r;if(Math.abs(x)<6&&Math.abs(z)<6)continue;let yh=getHeight(x,z);const grp=new THREE.Group();let tc=currentBioma===BIOMAS_ARRAY[1]?0xaa9988:0xb87c4f;let fc=currentBioma===BIOMAS_ARRAY[1]?0xaaccdd:(currentBioma===BIOMAS_ARRAY[2]?0xcc6644:0x6baa5a);const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.75,1.2,5),new THREE.MeshStandardMaterial({color:tc}));tr.position.y=yh+0.6;tr.castShadow=true;const fo=new THREE.Mesh(new THREE.ConeGeometry(0.85,1.2,6),new THREE.MeshStandardMaterial({color:fc}));fo.position.y=yh+1.3;grp.add(tr,fo);grp.position.set(x,0,z);scene.add(grp);trees.push({mesh:grp,x,z,radius:0.7});} }
@@ -242,20 +240,155 @@
     function createPlayer() { if(player)scene.remove(player);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.65,1.0,8),new THREE.MeshStandardMaterial({color:0x3355aa})));const cape=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.3,6),new THREE.MeshStandardMaterial({color:0xaa2222,side:THREE.DoubleSide}));cape.position.set(0,0.1,-0.3);cape.rotation.x=0.2;g.add(cape);const head=new THREE.Mesh(new THREE.SphereGeometry(0.55,16,16),new THREE.MeshStandardMaterial({color:0xffcc99}));head.position.y=0.95;g.add(head);const hb=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.55,0.3,8),new THREE.MeshStandardMaterial({color:0x442288}));hb.position.y=1.45;g.add(hb);const ht=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.8,8),new THREE.MeshStandardMaterial({color:0x442288}));ht.position.y=1.95;g.add(ht);g.position.set(0,getHeight(0,0)+0.35,0);scene.add(g);player=g; }
     function updateHUD() { document.getElementById('coinVal').innerText=coins;document.getElementById('hpVal').innerText=`${heroHP}/${heroMaxHP}`;document.getElementById('potionVal').innerText=potions;document.getElementById('atkVal').innerText=heroAtk;document.getElementById('gemCount').innerText=gemsCollected; }
 
-    // ========== COMBATE (corregido) ==========
-    const arenaDiv=document.getElementById('fightingArena'),heroFill=document.getElementById('heroHealthFill'),enemyFill=document.getElementById('enemyHealthFill'),fightLogSpan=document.getElementById('fightLogMsg');let isFightingAnim=false;
-    function showFloatingDamage(v,h,t){const d=document.createElement('div');d.className='floating-damage';d.innerText=h?`+${v}❤️`:`-${v}💥`;d.style.color=h?'#aaffaa':'#ffaa66';const r=t.getBoundingClientRect();d.style.left=`${r.left+r.width/2-25}px`;d.style.top=`${r.top-20}px`;document.body.appendChild(d);setTimeout(()=>d.remove(),600);}
-    function showEffect(e,t){const ef=document.createElement('div');ef.className='effect-particle';ef.innerText=e;const r=t.getBoundingClientRect();ef.style.left=`${r.left+r.width/2-30}px`;ef.style.top=`${r.top+r.height/2-30}px`;document.body.appendChild(ef);setTimeout(()=>ef.remove(),400);}
-    function setLog(m){fightLogSpan.innerHTML=`🔥 ${m} 🔥`;}
-    function updateFightUI(){if(!currentEnemyRef)return;heroFill.style.width=`${Math.max(0,(heroHP/heroMaxHP)*100)}%`;document.getElementById('arenaHeroHP').innerText=heroHP;document.getElementById('arenaHeroMax').innerText=heroMaxHP;document.getElementById('arenaHeroDef').innerText=heroDef;enemyFill.style.width=`${Math.max(0,(currentEnemyRef.hp/currentEnemyRef.maxHp)*100)}%`;document.getElementById('arenaEnemyHP').innerText=currentEnemyRef.hp;document.getElementById('arenaEnemyMax').innerText=currentEnemyRef.maxHp;document.getElementById('arenaEnemyAtk').innerText=currentEnemyRef.atk;document.getElementById('heroFighterEmoji').innerHTML=heroHP>heroMaxHP/3?"⚔️🧙‍♂️✨":"😫🩸⚔️";document.getElementById('enemyFighterEmoji').innerHTML=currentEnemyRef.hp>currentEnemyRef.maxHp/2?"👹💢":"👺💀";}
-    function disableBtns(d){document.querySelectorAll('.fight-btn').forEach(b=>{if(d)b.classList.add('disabled');else b.classList.remove('disabled');});}
-    async function performHeroAttack(){if(isFightingAnim||!inCombat||!currentEnemyRef)return;isFightingAnim=true;disableBtns(true);const h=document.getElementById('heroFighter');h.classList.add('hero-attack-anim');setTimeout(()=>h.classList.remove('hero-attack-anim'),220);let dmg=Math.max(2,heroAtk-currentEnemyRef.def+Math.floor(Math.random()*6));currentEnemyRef.hp-=dmg;updateFightUI();showFloatingDamage(dmg,false,document.getElementById('enemyFighter'));setLog(`¡GOLPE! -${dmg} HP`);if(currentEnemyRef.hp<=0){await endFightVictory();return;}setTimeout(()=>{performEnemyTurn();isFightingAnim=false;disableBtns(false);},600);}
-    async function performHeroDefend(){if(isFightingAnim||!inCombat)return;isFightingAnim=true;disableBtns(true);const h=document.getElementById('heroFighter');h.classList.add('shield-anim');setTimeout(()=>h.classList.remove('shield-anim'),300);combatDefending=true;setLog("🛡️ DEFENSA ACTIVADA!");setTimeout(()=>{performEnemyTurn(true);isFightingAnim=false;disableBtns(false);},600);}
-    async function performHeroPotion(){if(isFightingAnim||!inCombat)return;if(potions<=0){setLog("❌ NO HAY POCIONES!");return;}if(heroHP>=heroMaxHP){setLog("❤️ VIDA LLENA");return;}isFightingAnim=true;disableBtns(true);const h=document.getElementById('heroFighter');h.classList.add('potion-anim');setTimeout(()=>h.classList.remove('potion-anim'),400);let heal=12;heroHP=Math.min(heroMaxHP,heroHP+heal);potions--;updateHUD();updateFightUI();showFloatingDamage(heal,true,h);setLog(`🧪 +${heal} HP`);setTimeout(()=>{performEnemyTurn();isFightingAnim=false;disableBtns(false);},600);}
-    function performEnemyTurn(skipDef=false){if(!inCombat||!currentEnemyRef||currentEnemyRef.hp<=0){isFightingAnim=false;disableBtns(false);return;}let db=(combatDefending&&!skipDef)?(heroDef+3):heroDef;let dmg=Math.max(2,currentEnemyRef.atk-db+Math.floor(Math.random()*5));if(combatDefending&&!skipDef)setLog(`🛡️ DEFENSA reduce a ${dmg}`);else setLog(`👹 ENEMIGO ATACA: -${dmg} HP`);combatDefending=false;const e=document.getElementById('enemyFighter');e.classList.add('enemy-attack-anim');setTimeout(()=>e.classList.remove('enemy-attack-anim'),220);heroHP-=dmg;if(heroHP<0)heroHP=0;updateFightUI();updateHUD();showFloatingDamage(dmg,false,document.getElementById('heroFighter'));if(heroHP<=0){endFightDefeat();}else{isFightingAnim=false;disableBtns(false);}}
-    async function endFightVictory(){inCombat=false;isFightingAnim=false;let rwd=8+Math.floor(Math.random()*10);coins+=rwd;if(Math.random()<0.3)potions++;updateHUD();setLog(`🏆 VICTORIA! +${rwd}🪙`);const idx=enemiesList.findIndex(e=>e===currentEnemyRef);if(idx!==-1){scene.remove(currentEnemyRef.mesh);enemiesList.splice(idx,1);}window.enemigosVencidos=(window.enemigosVencidos||0)+1;currentEnemyRef=null;MisionesManager.verificarTodas();setInteractionCooldown();setTimeout(()=>{arenaDiv.classList.add('hidden');},1200);}
-    function endFightDefeat(){inCombat=false;isFightingAnim=false;setLog("💀 DERROTA...");currentEnemyRef=null;setInteractionCooldown();setTimeout(()=>{arenaDiv.classList.add('hidden');resetCurrentBiome();},1500);}
-    function startFightingCombat(enemy){if(inCombat||!canInteract())return;inCombat=true;combatDefending=false;currentEnemyRef=enemy;arenaDiv.classList.remove('hidden');updateFightUI();setLog(`⚔️ ¡COMBATE!`);disableBtns(false);}
+    // ========== COMBATE (REPARADO - FLUIDO Y SIN TRABAS) ==========
+    const arenaDiv=document.getElementById('fightingArena'),heroFill=document.getElementById('heroHealthFill'),enemyFill=document.getElementById('enemyHealthFill'),fightLogSpan=document.getElementById('fightLogMsg');
+    let isFightingAnim = false;
+
+    function showFloatingDamage(v, h, t) {
+      const d = document.createElement('div'); d.className = 'floating-damage';
+      d.innerText = h ? `+${v}❤️` : `-${v}💥`; d.style.color = h ? '#aaffaa' : '#ffaa66';
+      const r = t.getBoundingClientRect();
+      d.style.left = `${r.left + r.width/2 - 25}px`; d.style.top = `${r.top - 20}px`;
+      document.body.appendChild(d); setTimeout(() => d.remove(), 600);
+    }
+    function setLog(m) { fightLogSpan.innerHTML = `🔥 ${m} 🔥`; }
+    function updateFightUI() {
+      if (!currentEnemyRef) return;
+      heroFill.style.width = `${Math.max(0, (heroHP/heroMaxHP)*100)}%`;
+      document.getElementById('arenaHeroHP').innerText = heroHP;
+      document.getElementById('arenaHeroMax').innerText = heroMaxHP;
+      document.getElementById('arenaHeroDef').innerText = heroDef;
+      enemyFill.style.width = `${Math.max(0, (currentEnemyRef.hp/currentEnemyRef.maxHp)*100)}%`;
+      document.getElementById('arenaEnemyHP').innerText = currentEnemyRef.hp;
+      document.getElementById('arenaEnemyMax').innerText = currentEnemyRef.maxHp;
+      document.getElementById('arenaEnemyAtk').innerText = currentEnemyRef.atk;
+      document.getElementById('heroFighterEmoji').innerHTML = heroHP > heroMaxHP/3 ? "⚔️🧙‍♂️✨" : "😫🩸⚔️";
+      document.getElementById('enemyFighterEmoji').innerHTML = currentEnemyRef.hp > currentEnemyRef.maxHp/2 ? "👹💢" : "👺💀";
+    }
+    function disableBtns(d) { document.querySelectorAll('.fight-btn').forEach(b => { if (d) b.classList.add('disabled'); else b.classList.remove('disabled'); }); }
+    function clearCombatTimeout() { if (combatTimeout) { clearTimeout(combatTimeout); combatTimeout = null; } }
+
+    async function performHeroAttack() {
+      if (isFightingAnim || !inCombat || !currentEnemyRef) return;
+      isFightingAnim = true; disableBtns(true);
+      const heroCard = document.getElementById('heroFighter');
+      heroCard.classList.add('hero-attack-anim');
+      setTimeout(() => heroCard.classList.remove('hero-attack-anim'), 220);
+      let damage = Math.max(2, heroAtk - currentEnemyRef.def + Math.floor(Math.random()*6));
+      currentEnemyRef.hp -= damage;
+      updateFightUI();
+      showFloatingDamage(damage, false, document.getElementById('enemyFighter'));
+      setLog(`¡GOLPE! -${damage} HP`);
+      if (currentEnemyRef.hp <= 0) {
+        await endFightVictory();
+        return;
+      }
+      combatTimeout = setTimeout(() => {
+        combatTimeout = null;
+        performEnemyTurn();
+      }, 700);
+    }
+
+    async function performHeroDefend() {
+      if (isFightingAnim || !inCombat) return;
+      isFightingAnim = true; disableBtns(true);
+      const heroCard = document.getElementById('heroFighter');
+      heroCard.classList.add('shield-anim');
+      setTimeout(() => heroCard.classList.remove('shield-anim'), 300);
+      combatDefending = true;
+      setLog("🛡️ DEFENSA ACTIVADA!");
+      combatTimeout = setTimeout(() => {
+        combatTimeout = null;
+        performEnemyTurn(true);
+      }, 700);
+    }
+
+    async function performHeroPotion() {
+      if (isFightingAnim || !inCombat) return;
+      if (potions <= 0) { setLog("❌ NO HAY POCIONES!"); return; }
+      if (heroHP >= heroMaxHP) { setLog("❤️ VIDA LLENA"); return; }
+      isFightingAnim = true; disableBtns(true);
+      const heroCard = document.getElementById('heroFighter');
+      heroCard.classList.add('potion-anim');
+      setTimeout(() => heroCard.classList.remove('potion-anim'), 400);
+      let heal = 12;
+      heroHP = Math.min(heroMaxHP, heroHP + heal);
+      potions--;
+      updateHUD();
+      updateFightUI();
+      showFloatingDamage(heal, true, heroCard);
+      setLog(`🧪 +${heal} HP`);
+      combatTimeout = setTimeout(() => {
+        combatTimeout = null;
+        performEnemyTurn();
+      }, 700);
+    }
+
+    function performEnemyTurn(skipDef = false) {
+      if (!inCombat || !currentEnemyRef || currentEnemyRef.hp <= 0) {
+        isFightingAnim = false;
+        disableBtns(false);
+        return;
+      }
+      let defenseBonus = (combatDefending && !skipDef) ? (heroDef + 3) : heroDef;
+      let damage = Math.max(2, currentEnemyRef.atk - defenseBonus + Math.floor(Math.random()*5));
+      if (combatDefending && !skipDef) setLog(`🛡️ DEFENSA reduce a ${damage}`);
+      else setLog(`👹 ENEMIGO ATACA: -${damage} HP`);
+      combatDefending = false;
+      const enemyCard = document.getElementById('enemyFighter');
+      enemyCard.classList.add('enemy-attack-anim');
+      setTimeout(() => enemyCard.classList.remove('enemy-attack-anim'), 220);
+      heroHP -= damage;
+      if (heroHP < 0) heroHP = 0;
+      updateFightUI();
+      updateHUD();
+      showFloatingDamage(damage, false, document.getElementById('heroFighter'));
+      if (heroHP <= 0) {
+        endFightDefeat();
+      } else {
+        isFightingAnim = false;
+        disableBtns(false);
+      }
+    }
+
+    async function endFightVictory() {
+      clearCombatTimeout();
+      inCombat = false; isFightingAnim = false;
+      disableBtns(true);
+      let reward = 8 + Math.floor(Math.random()*10);
+      coins += reward;
+      if (Math.random() < 0.3) potions++;
+      updateHUD();
+      setLog(`🏆 VICTORIA! +${reward}🪙`);
+      const idx = enemiesList.findIndex(e => e === currentEnemyRef);
+      if (idx !== -1) { scene.remove(currentEnemyRef.mesh); enemiesList.splice(idx, 1); }
+      window.enemigosVencidos = (window.enemigosVencidos || 0) + 1;
+      currentEnemyRef = null;
+      MisionesManager.verificarTodas();
+      setInteractionCooldown();
+      setTimeout(() => { arenaDiv.classList.add('hidden'); }, 1200);
+    }
+
+    function endFightDefeat() {
+      clearCombatTimeout();
+      inCombat = false; isFightingAnim = false;
+      disableBtns(true);
+      setLog("💀 DERROTA...");
+      currentEnemyRef = null;
+      setInteractionCooldown();
+      setTimeout(() => { arenaDiv.classList.add('hidden'); resetCurrentBiome(); }, 1500);
+    }
+
+    function startFightingCombat(enemy) {
+      if (inCombat || !canInteract()) return;
+      clearCombatTimeout();
+      inCombat = true; combatDefending = false; currentEnemyRef = enemy;
+      isFightingAnim = false;
+      arenaDiv.classList.remove('hidden');
+      updateFightUI();
+      setLog(`⚔️ ¡COMBATE!`);
+      disableBtns(false);
+    }
 
     // ========== BATTLESHIP ==========
     const BS_ROWS=4,BS_COLS=5;let bsPlayerBoard,bsEnemyBoard,bsEnemyShips,bsPlayerShips,bsPlayerHitsOnEnemy,bsEnemyHitsOnPlayer,bsPlayerReady,bsGameOver,bsPlayerTurn,bsPlacementMode,bsPlayerShipsSunk,bsEnemyShipsSunk,selectedShipIndex,placementTempPositions;
@@ -284,7 +417,7 @@
     // ========== MODAL DE PUNTUACIÓN ==========
     function mostrarModalPuntuacion() {
       inScore = true;
-      document.getElementById('scoreValue').innerText = coins; // O cualquier cálculo de puntuación
+      document.getElementById('scoreValue').innerText = coins;
       document.getElementById('scoreUI').classList.remove('hidden');
       document.getElementById('scoreFeedback').innerText = '';
     }
@@ -294,7 +427,7 @@
         document.getElementById('scoreFeedback').innerText = '⚠️ Introduce un nombre';
         return;
       }
-      const score = coins; // Usamos monedas como puntuación
+      const score = coins;
       const exito = await enviarPuntuacion(username, score);
       if (exito) {
         document.getElementById('scoreFeedback').innerText = '✅ ¡Puntuación enviada!';
@@ -342,9 +475,9 @@
     document.getElementById('buyHealth').onclick=buyHealth;
     document.getElementById('buyPotion').onclick=buyPotion;
     document.getElementById('spinBtn').onclick=spinSlot;
-    document.getElementById('fightAttackBtn').onclick=()=>{if(inCombat&&!isFightingAnim)performHeroAttack();};
-    document.getElementById('fightDefendBtn').onclick=()=>{if(inCombat&&!isFightingAnim)performHeroDefend();};
-    document.getElementById('fightPotionBtn').onclick=()=>{if(inCombat&&!isFightingAnim)performHeroPotion();};
+    document.getElementById('fightAttackBtn').onclick=()=>{ if(inCombat&&!isFightingAnim) performHeroAttack(); };
+    document.getElementById('fightDefendBtn').onclick=()=>{ if(inCombat&&!isFightingAnim) performHeroDefend(); };
+    document.getElementById('fightPotionBtn').onclick=()=>{ if(inCombat&&!isFightingAnim) performHeroPotion(); };
     document.getElementById('closeBattleship').addEventListener('click',closeBattleship);
     document.getElementById('bs-ready-btn').addEventListener('click',bsReady);
     document.getElementById('bs-reset-placement-btn').addEventListener('click',bsResetPlacement);
