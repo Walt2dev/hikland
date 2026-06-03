@@ -10,8 +10,8 @@
     #hud-container { position: absolute; top: 10px; left: 10px; z-index: 100; pointer-events: none; display: flex; flex-direction: column; gap: 8px; }
     #hud { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 8px 16px; border-radius: 40px; color: gold; display: flex; gap: 18px; align-items: center; }
     #hud span { color: white; font-size: 1.2rem; margin-left: 5px; }
-    #gem-indicator { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);   max-width: 60px;  padding: 6px 16px; border-radius: 30px; color: #ff88ff; font-weight: bold; font-size: 0.9rem; pointer-events: auto; }
-    #misiones-btn { background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); max-width: 60px; padding: 10px 20px; border-radius: 30px; color: #ffd966; font-weight: bold; cursor: pointer; pointer-events: auto; border: 2px solid #ffaa44; text-align: center; transition: 0.2s; font-size: 1rem; }
+    #gem-indicator { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 6px 16px; border-radius: 30px; color: #ff88ff; font-weight: bold; font-size: 0.9rem; pointer-events: auto; }
+    #misiones-btn { background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); padding: 10px 20px; border-radius: 30px; color: #ffd966; font-weight: bold; cursor: pointer; pointer-events: auto; border: 2px solid #ffaa44; text-align: center; transition: 0.2s; font-size: 1rem; }
     #misiones-btn:hover { background: #ffaa44; color: black; }
     #biome-indicator { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 30px; color: #ffdd99; z-index: 100; pointer-events: none; }
     #misiones-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(145deg, #1e293b, #0f172a); width: 90%; max-width: 500px; border-radius: 48px; padding: 20px; border: 2px solid #ffaa44; color: white; z-index: 600; display: flex; flex-direction: column; gap: 12px; backdrop-filter: blur(12px); max-height: 80vh; overflow-y: auto; }
@@ -53,7 +53,7 @@
     .hero-card { background: linear-gradient(145deg, #1e3a5f, #0a1a2a); }
     .enemy-card { background: linear-gradient(145deg, #5e2a2a, #2e1414); }
     .fighter-emoji { font-size: 5rem; filter: drop-shadow(0 0 15px gold); display: inline-block; }
-    .fighter-name { font-size: 1.5rem;  font-weight: bold; margin: 8px 0; background: #000000aa; display: inline-block; padding: 4px 20px; border-radius: 50px; color: white; }
+    .fighter-name { font-size: 1.5rem; font-weight: bold; margin: 8px 0; background: #000000aa; display: inline-block; padding: 4px 20px; border-radius: 50px; }
     .health-bar-bg { width: 85%; margin: 15px auto; background: #330000; border-radius: 30px; height: 26px; overflow: hidden; border: 1px solid #ffaa66; }
     .health-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #ff8888); border-radius: 30px; transition: width 0.2s; }
     .fight-stats { font-size: 1rem; background: #00000099; color: white; display: inline-block; padding: 6px 18px; border-radius: 40px; margin-top: 10px; }
@@ -582,7 +582,11 @@
       currentEnemyRef=null; 
       MisionesManager.verificarTodas(); 
       setInteractionCooldown(); 
-      setTimeout(()=>{arenaDiv.classList.add('hidden');},1200);
+       setTimeout(() => {
+    arenaDiv.classList.add('hidden');
+    // 🎵 Volver a música del bioma
+    AudioManager.changeMusicForBiome(currentBiomaLevel);
+  }, 1200);
     }
     
     function endFightDefeat(){
@@ -594,6 +598,9 @@
       currentEnemyRef=null; 
       setInteractionCooldown(); 
       arenaDiv.classList.add('hidden');
+        arenaDiv.classList.add('hidden');
+  AudioManager.stopMusic(); // Silencio en derrota
+
       
       // Activar overlay para bloquear interacciones
       document.getElementById('gameEndedOverlay').classList.add('active');
@@ -606,6 +613,8 @@
     }
     
     function startFightingCombat(enemy){
+        // 🎵 Música de combate
+  AudioManager.changeMusicForActivity('combate');
       if(inCombat||!canInteract()||gameEnded) return;
       inCombat=true;
       combatDefending=false;
@@ -627,17 +636,23 @@
     function bsReady(){if(selectedShipIndex<bsPlayerShips.length){document.getElementById('bs-status-msg').innerText='⚠️ Coloca todas tus naves primero';return;}bsPlayerReady=true;bsPlacementMode=false;document.getElementById('bs-ready-btn').classList.add('hidden');document.getElementById('bs-status-msg').innerText='🎯 ¡TU TURNO! Dispara en el RADAR';renderBSGrids();}
     function playerFire(r,c){if(!bsPlayerTurn||bsGameOver||bsPlacementMode||bsEnemyBoard[r][c]!=='empty')return;let hit=false;for(const ship of bsEnemyShips){for(const pos of ship.positions){if(pos.row===r&&pos.col===c){hit=true;bsEnemyBoard[r][c]='hit';if(!ship.sunk&&ship.positions.every(p=>bsEnemyBoard[p.row][p.col]==='hit')){ship.sunk=true;bsEnemyShipsSunk++;ship.positions.forEach(p=>{bsEnemyBoard[p.row][p.col]='sunk';});document.getElementById('bs-status-msg').innerText=`💀 ¡Hundiste ${ship.name}!`;}else{document.getElementById('bs-status-msg').innerText='💥 ¡IMPACTO!';}break;}}if(hit)break;}if(!hit){bsEnemyBoard[r][c]='miss';document.getElementById('bs-status-msg').innerText='💧 Agua...';}renderBSGrids();if(bsEnemyShipsSunk>=3){bsGameOver=true;document.getElementById('bs-status-msg').innerText='🏆 ¡VICTORIA TOTAL!';window.battleshipGanado=true;MisionesManager.verificarTodas();setTimeout(()=>closeBattleship(),2500);return;}bsPlayerTurn=false;document.getElementById('bs-status-msg').innerText='🤖 Turno de la computadora...';renderBSGrids();setTimeout(()=>enemyTurn(),800);}
     function enemyTurn(){if(bsGameOver)return;let available=[];for(let r=0;r<BS_ROWS;r++)for(let c=0;c<BS_COLS;c++)if(bsPlayerBoard[r][c]==='empty'||bsPlayerBoard[r][c]==='ship')available.push({row:r,col:c});if(!available.length)return;const shot=available[Math.floor(Math.random()*available.length)];if(bsPlayerBoard[shot.row][shot.col]==='ship'){bsPlayerBoard[shot.row][shot.col]='hit';for(const ship of bsPlayerShips){if(!ship.sunk&&ship.positions.every(p=>bsPlayerBoard[p.row][p.col]==='hit')){ship.sunk=true;bsPlayerShipsSunk++;ship.positions.forEach(p=>{bsPlayerBoard[p.row][p.col]='sunk';});}}}else{bsPlayerBoard[shot.row][shot.col]='miss';}renderBSGrids();if(bsPlayerShipsSunk>=3){bsGameOver=true;document.getElementById('bs-status-msg').innerText='💀 DERROTA...';setTimeout(()=>closeBattleship(),2500);return;}bsPlayerTurn=true;document.getElementById('bs-status-msg').innerText='🎯 ¡TU TURNO! Dispara en el RADAR';renderBSGrids();}
-    function openBattleship(){if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inBattleship=true;initBattleship();document.getElementById('battleshipUI').classList.remove('hidden');}
-    function closeBattleship(){if(!inBattleship)return;inBattleship=false;bsGameOver=true;document.getElementById('battleshipUI').classList.add('hidden');setInteractionCooldown();if(player&&muellesList.length){const m=muellesList[0];const a=Math.atan2(player.position.z-m.z,player.position.x-m.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openBattleship(){  // 🎵 Música de batalla naval
+  AudioManager.changeMusicForActivity('battleship');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inBattleship=true;initBattleship();document.getElementById('battleshipUI').classList.remove('hidden');}
+    function closeBattleship(){if(!inBattleship)return;inBattleship=false;bsGameOver=true;document.getElementById('battleshipUI').classList.add('hidden');setInteractionCooldown();if(player&&muellesList.length){const m=muellesList[0];const a=Math.atan2(player.position.z-m.z,player.position.x-m.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;AudioManager.changeMusicForBiome(currentBiomaLevel);}}
 
-    function closeSlotMachine(){if(!inSlotMachine)return;inSlotMachine=false;document.getElementById('slotUI').classList.add('hidden');setInteractionCooldown();if(player&&casinosList.length){const c=casinosList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
-    function openSlotMachine(){if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inSlotMachine=true;document.getElementById('slotUI').classList.remove('hidden');}
-    function closeShop(){if(!inShop)return;inShop=false;document.getElementById('shopUI').classList.add('hidden');setInteractionCooldown();if(player&&shopsList.length){const s=shopsList[0];const a=Math.atan2(player.position.z-s.z,player.position.x-s.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
-    function openShop(){if(inCombat||inShop||inBattleship||inChaman||!canInteract()||gameEnded)return;inShop=true;document.getElementById('shopUI').classList.remove('hidden');document.getElementById('shopCoins').innerText=coins;}
+    function closeSlotMachine(){AudioManager.changeMusicForBiome(currentBiomaLevel);if(!inSlotMachine)return;inSlotMachine=false;document.getElementById('slotUI').classList.add('hidden');setInteractionCooldown();if(player&&casinosList.length){const c=casinosList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openSlotMachine(){// 🎵 Música de casino
+  AudioManager.changeMusicForActivity('casino');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inSlotMachine=true;document.getElementById('slotUI').classList.remove('hidden');}
+    function closeShop(){// 🎵 Volver a música del bioma
+  AudioManager.changeMusicForBiome(currentBiomaLevel);if(!inShop)return;inShop=false;document.getElementById('shopUI').classList.add('hidden');setInteractionCooldown();if(player&&shopsList.length){const s=shopsList[0];const a=Math.atan2(player.position.z-s.z,player.position.x-s.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openShop(){// 🎵 Música de cabaña
+  AudioManager.changeMusicForActivity('cabaña'); if(inCombat||inShop||inBattleship||inChaman||!canInteract()||gameEnded)return;inShop=true;document.getElementById('shopUI').classList.remove('hidden');document.getElementById('shopCoins').innerText=coins;}
     function buyHealth(){if(coins>=12&&heroHP<heroMaxHP&&!gameEnded){coins-=12;heroHP=Math.min(heroMaxHP,heroHP+10);window.updateHUD();document.getElementById('shopCoins').innerText=coins;MisionesManager.verificarTodas();}}
     function buyPotion(){if(coins>=8&&!gameEnded){coins-=8;potions++;window.updateHUD();document.getElementById('shopCoins').innerText=coins;}}
-    function openChaman(){if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inChaman=true;const todas=MisionesManager.completadas.size>=MisionesManager.misiones.length-1;const gems=gemsCollected>=3;document.getElementById('chaman-dialog').innerText=todas&&gems?'"Has completado todas las misiones y reunido las 3 gemas... ¡Eres digno de la Medalla del Ganador!" 🍄':`"Aún te falta camino... Misiones: ${MisionesManager.completadas.size}/${MisionesManager.misiones.length-1}, Gemas: ${gemsCollected}/3"`;if(todas&&gems&&!window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ MEDALLA DEL GANADOR ✨🍄';window.medallaObtenida=true;MisionesManager.verificarTodas();}else if(window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ YA TIENES LA MEDALLA ✨🍄';}else{document.getElementById('chaman-reward').innerHTML='🔒';}document.getElementById('chamanUI').classList.remove('hidden');}
-    function closeChaman(){if(!inChaman)return;inChaman=false;document.getElementById('chamanUI').classList.add('hidden');setInteractionCooldown();if(player&&chamanesList.length){const c=chamanesList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openChaman(){// 🎵 Música mística
+  AudioManager.changeMusicForActivity('chaman');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inChaman=true;const todas=MisionesManager.completadas.size>=MisionesManager.misiones.length-1;const gems=gemsCollected>=3;document.getElementById('chaman-dialog').innerText=todas&&gems?'"Has completado todas las misiones y reunido las 3 gemas... ¡Eres digno de la Medalla del Ganador!" 🍄':`"Aún te falta camino... Misiones: ${MisionesManager.completadas.size}/${MisionesManager.misiones.length-1}, Gemas: ${gemsCollected}/3"`;if(todas&&gems&&!window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ MEDALLA DEL GANADOR ✨🍄';window.medallaObtenida=true;MisionesManager.verificarTodas();}else if(window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ YA TIENES LA MEDALLA ✨🍄';}else{document.getElementById('chaman-reward').innerHTML='🔒';}document.getElementById('chamanUI').classList.remove('hidden');}
+    function closeChaman(){if(!inChaman)return;inChaman=false;document.getElementById('chamanUI').classList.add('hidden');setInteractionCooldown();if(player&&chamanesList.length){const c=chamanesList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;  AudioManager.changeMusicForBiome(currentBiomaLevel);
+}}
 
     function updateInteractions(){
       if(!player||inCombat||inShop||inSlotMachine||inBattleship||inChaman||isAnimating||!canInteract()||gameEnded)return;
@@ -655,7 +670,7 @@
       player.position.y=getHeight(px,pz)+0.35;
     }
 
-    function setCurrentBiome(level){currentBiomaLevel=level;currentBioma=BIOMAS_ARRAY[level];document.getElementById('biomeName').innerText=currentBioma.name;setInteractionCooldown();regenerateWorldByBiome();}
+    function setCurrentBiome(level){currentBiomaLevel=level;currentBioma=BIOMAS_ARRAY[level];document.getElementById('biomeName').innerText=currentBioma.name;setInteractionCooldown();regenerateWorldByBiome();AudioManager.changeMusicForBiome(level);}
     function regenerateWorldByBiome(){currentSeed=Math.floor(Math.random()*10000);noise.seed(currentSeed);generateTerrain();generateTrees();spawnItems();generatePortals();player.position.set(0,getHeight(0,0)+0.35,0);window.updateHUD();MisionesManager.renderizar();}
     function resetCurrentBiome(){heroHP=heroMaxHP=20+currentBiomaLevel*2;heroAtk=5+currentBiomaLevel;coins=10;potions=1;inCombat=inShop=inSlotMachine=inBattleship=inChaman=false;arenaDiv.classList.add('hidden');setInteractionCooldown();regenerateWorldByBiome();}
     function resetFullGame(){
@@ -760,6 +775,90 @@
     function gameLoop(){const now=performance.now(),dt=Math.min(0.033,(now-lastFrame)/1000);lastFrame=now;if(projectileCooldown>0)projectileCooldown-=dt;updatePlayerMovement(dt);updateEnemyMovement(dt);updateInteractions();updateCameraFollow();items.forEach(i=>{if(i.mesh)i.mesh.rotation.y+=0.03;});renderer.render(scene,camera);labelRenderer.render(scene,camera);requestAnimationFrame(gameLoop);}
     function init(){initJoysticks();cargarRankingLocal();generateTerrain();generateTrees();spawnItems();generatePortals();createPlayer();window.updateHUD();MisionesManager.renderizar();gameLoop();}
     init();
+
+
+    // ============ SISTEMA DE AUDIO ============
+const AudioManager = {
+  currentMusic: null,
+  audioContext: null,
+  musicVolume: 0.3,
+  sounds: {},
+  
+  // Mapeo de archivos de audio
+  musicFiles: {
+    bosque: 'sonidos/bosque_aventura.wav',  // CAMBIA por tus URLs reales
+    tundra: 'sonidos/tundra_aventura.wav',
+    volcan: 'sonidos/volcan_aventura.wav',
+    combate: 'sonidos/batalla_epica.wav',
+    casino: 'sonidos/casino_fiesta.wav',
+    cabaña: 'sonidos/cabaña_mercader.wav',
+    battleship: 'sonidos/batalla_ship.wav',
+    chaman: 'sonidos/chaman_mistico.wav'
+  },
+  
+  init() {
+    try {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {
+      console.log('Audio no disponible');
+    }
+  },
+  
+  playMusic(musicKey) {
+    if (!this.audioContext) return;
+    
+    // Detener música actual
+    this.stopMusic();
+    
+    const fileUrl = this.musicFiles[musicKey];
+    if (!fileUrl) return;
+    
+    // Crear elemento de audio
+    const audio = new Audio(fileUrl);
+    audio.loop = true;
+    audio.volume = this.musicVolume;
+    
+    // Conectar al AudioContext para mejor control
+    const source = this.audioContext.createMediaElementSource(audio);
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.value = this.musicVolume;
+    source.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    audio.play().catch(e => console.log('Autoplay bloqueado:', e));
+    this.currentMusic = { audio, source, gainNode };
+  },
+  
+  stopMusic() {
+    if (this.currentMusic) {
+      this.currentMusic.audio.pause();
+      this.currentMusic.audio.currentTime = 0;
+      this.currentMusic = null;
+    }
+  },
+  
+  changeMusicForBiome(biomeIndex) {
+    const biomes = ['bosque', 'tundra', 'volcan'];
+    this.playMusic(biomes[biomeIndex] || 'bosque');
+  },
+  
+  changeMusicForActivity(activity) {
+    this.playMusic(activity);
+  },
+  
+  resumeAudioContext() {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+  }
+};
+
+// Inicializar en el inicio
+AudioManager.init();
+
+// Reanudar AudioContext con la primera interacción del usuario
+document.addEventListener('click', () => AudioManager.resumeAudioContext(), { once: true });
+document.addEventListener('touchstart', () => AudioManager.resumeAudioContext(), { once: true });
   </script>
 </body>
 </html>
