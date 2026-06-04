@@ -7,11 +7,70 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { margin: 0; overflow: hidden; font-family: 'Segoe UI', monospace; background-color: black; position: fixed; width: 100%; height: 100%; }
+
+    /* ========== MENÚ PRINCIPAL ========== */
+    #mainMenu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a15 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      transition: opacity 0.5s ease;
+    }
+    #menuLogo {
+      max-width: 80%;
+      max-height: 40vh;
+      height: auto;
+      margin-bottom: 40px;
+      filter: drop-shadow(0 0 20px rgba(255,200,0,0.5));
+      animation: floatLogo 3s ease-in-out infinite;
+    }
+    @keyframes floatLogo {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+      100% { transform: translateY(0); }
+    }
+    #playButton {
+      background: linear-gradient(135deg, #ffaa44, #ff6600);
+      border: none;
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: bold;
+      padding: 16px 60px;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      box-shadow: 0 8px 0 #aa4400, 0 12px 30px rgba(255,140,0,0.4);
+      transition: all 0.1s ease;
+      margin-bottom: 30px;
+    }
+    #playButton:hover {
+      background: linear-gradient(135deg, #ffbb66, #ff7700);
+      box-shadow: 0 8px 0 #aa4400, 0 16px 40px rgba(255,140,0,0.6);
+    }
+    #playButton:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 0 #aa4400, 0 8px 20px rgba(255,140,0,0.4);
+    }
+    #menuFooter {
+      position: absolute;
+      bottom: 20px;
+      right: 30px;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+    /* =================================== */
+
     #hud-container { position: absolute; top: 10px; left: 10px; z-index: 100; pointer-events: none; display: flex; flex-direction: column; gap: 8px; }
     #hud { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 8px 16px; border-radius: 40px; color: gold; display: flex; gap: 18px; align-items: center; }
     #hud span { color: white; font-size: 1.2rem; margin-left: 5px; }
-    #gem-indicator { background: rgba(0,0,0,0.75);  max-width:60px; backdrop-filter: blur(8px); padding: 6px 16px; border-radius: 30px; color: #ff88ff; font-weight: bold; font-size: 0.9rem; pointer-events: auto; }
-    #misiones-btn { background: rgba(0,0,0,0.8); max-width:60px; backdrop-filter: blur(8px); padding: 10px 20px; border-radius: 30px; color: #ffd966; font-weight: bold; cursor: pointer; pointer-events: auto; border: 2px solid #ffaa44; text-align: center; transition: 0.2s; font-size: 1rem; }
+    #gem-indicator { background: rgba(0,0,0,0.75); font-size: 11px !important; max-width: 60px; backdrop-filter: blur(8px); padding: 5px 16px; border-radius: 30px; color: #ff88ff; font-weight: bold; font-size: 0.9rem; pointer-events: auto; }
+    #misiones-btn { background: rgba(0,0,0,0.8); font-size: 11px !important; max-width: 60px; backdrop-filter: blur(8px); padding: 5px 0px; border-radius: 30px; color: #ffd966; font-weight: bold; cursor: pointer; pointer-events: auto; border: 2px solid #ffaa44; text-align: center; transition: 0.2s; font-size: 1rem; }
     #misiones-btn:hover { background: #ffaa44; color: black; }
     #biome-indicator { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 30px; color: #ffdd99; z-index: 100; pointer-events: none; }
     #misiones-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(145deg, #1e293b, #0f172a); width: 90%; max-width: 500px; border-radius: 48px; padding: 20px; border: 2px solid #ffaa44; color: white; z-index: 600; display: flex; flex-direction: column; gap: 12px; backdrop-filter: blur(12px); max-height: 80vh; overflow-y: auto; }
@@ -53,7 +112,7 @@
     .hero-card { background: linear-gradient(145deg, #1e3a5f, #0a1a2a); }
     .enemy-card { background: linear-gradient(145deg, #5e2a2a, #2e1414); }
     .fighter-emoji { font-size: 5rem; filter: drop-shadow(0 0 15px gold); display: inline-block; }
-    .fighter-name { font-size: 1.5rem; font-weight: bold; margin: 8px 0; color: green;background: #000000aa; display: inline-block; padding: 4px 20px; border-radius: 50px; }
+    .fighter-name { font-size: 1.5rem; font-weight: bold; margin: 8px 0; background: #000000aa; display: inline-block; padding: 4px 20px; border-radius: 50px; }
     .health-bar-bg { width: 85%; margin: 15px auto; background: #330000; border-radius: 30px; height: 26px; overflow: hidden; border: 1px solid #ffaa66; }
     .health-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #ff8888); border-radius: 30px; transition: width 0.2s; }
     .fight-stats { font-size: 1rem; background: #00000099; color: white; display: inline-block; padding: 6px 18px; border-radius: 40px; margin-top: 10px; }
@@ -129,6 +188,13 @@
   </script>
 </head>
 <body>
+  <!-- MENÚ PRINCIPAL -->
+  <div id="mainMenu">
+    <img src="logo.png" alt="Hikland Logo" id="menuLogo" />
+    <button id="playButton">JUGAR</button>
+    <footer id="menuFooter">DracxCore</footer>
+  </div>
+
   <div id="hud-container">
     <div id="hud">🪙 <span id="coinVal">0</span>&nbsp;&nbsp;| ❤️ <span id="hpVal">22</span>&nbsp;&nbsp;| 🧪 <span id="potionVal">2</span>&nbsp;&nbsp;| ⚔️ <span id="atkVal">6</span></div>
     <div id="gem-indicator">💎 Gemas: <span id="gemCount">0</span>/3</div>
@@ -180,9 +246,7 @@
     </div>
   </div>
   
-  <!-- Overlay para bloquear interacciones cuando el juego termina -->
   <div id="gameEndedOverlay" class="game-ended-overlay"></div>
-
   <div id="sageMessage" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#000000cc;color:#ccffaa;padding:10px 20px;border-radius:40px;z-index:800;font-weight:bold;pointer-events:none;" class="hidden"></div>
 
   <script type="importmap">
@@ -192,6 +256,10 @@
   <script type="module">
     import * as THREE from 'three';
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // ============== BLOQUEO DE INICIO ==============
+    let gameStarted = false;
+    // =============================================
 
     const MisionesManager = {
       misiones: [], completadas: new Set(),
@@ -211,7 +279,7 @@
 
     let coins = 25, heroHP = 24, heroMaxHP = 24, heroAtk = 6, heroDef = 2, potions = 2;
     let gemsCollected = 0;
-    let gameEnded = false; // NUEVA VARIABLE: bloquea todo cuando el juego termina
+    let gameEnded = false;
     
     window.updateHUD = function() { 
       if(gameEnded) return;
@@ -255,9 +323,9 @@
     let moveInput = { x: 0, z: 0 }, playerSpeed = 8.0, cameraAngleX = 0, cameraAngleY = 0.85, zoomDistance = 11.5, projectileCooldown = 0;
     const keysPressed = {}; let ctrlPressed = false, lastMouseX = 0, lastMouseY = 0, moveActiveJoystick = false, camActiveJoystick = false;
     
-    window.addEventListener('keydown', e => { if(gameEnded) return; keysPressed[e.key.toLowerCase()] = true; if (e.key === 'Control') ctrlPressed = true; });
-    window.addEventListener('keyup', e => { keysPressed[e.key.toLowerCase()] = false; if (e.key === 'Control') ctrlPressed = false; });
-    window.addEventListener('mousemove', e => { if (ctrlPressed && !camActiveJoystick && !inCombat && !inShop && !inSlotMachine && !inBattleship && !inChaman && !gameEnded) { cameraAngleX += (e.clientX - lastMouseX) * 0.005; cameraAngleY += (e.clientY - lastMouseY) * 0.005; cameraAngleY = Math.min(1.3, Math.max(0.3, cameraAngleY)); } lastMouseX = e.clientX; lastMouseY = e.clientY; });
+    window.addEventListener('keydown', e => { if(!gameStarted || gameEnded) return; keysPressed[e.key.toLowerCase()] = true; if (e.key === 'Control') ctrlPressed = true; });
+    window.addEventListener('keyup', e => { if(!gameStarted) return; keysPressed[e.key.toLowerCase()] = false; if (e.key === 'Control') ctrlPressed = false; });
+    window.addEventListener('mousemove', e => { if(!gameStarted || gameEnded) return; if (ctrlPressed && !camActiveJoystick && !inCombat && !inShop && !inSlotMachine && !inBattleship && !inChaman) { cameraAngleX += (e.clientX - lastMouseX) * 0.005; cameraAngleY += (e.clientY - lastMouseY) * 0.005; cameraAngleY = Math.min(1.3, Math.max(0.3, cameraAngleY)); } lastMouseX = e.clientX; lastMouseY = e.clientY; });
 
     class SimplexNoise { constructor(seed = 1) { this.grad3 = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]]; this.p = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180]; this.perm = new Array(512); this.seed(seed); } seed(s) { for(let i=0;i<256;i++){let v=(i+s)%256;this.perm[i]=this.perm[i+256]=this.p[v];} } dot(g,x,y,z){return g[0]*x+g[1]*y+g[2]*z;} noise3D(x,y,z){let n0=0,n1=0,n2=0,n3=0,s=(x+y+z)/3,i=Math.floor(x+s),j=Math.floor(y+s),k=Math.floor(z+s);let t=(i+j+k)/6,X0=i-t,Y0=j-t,Z0=k-t,x0=x-X0,y0=y-Y0,z0=z-Z0;let i1,j1,k1,i2,j2,k2;if(x0>=y0){if(y0>=z0){i1=1;j1=0;k1=0;i2=1;j2=1;k2=0}else if(x0>=z0){i1=1;j1=0;k1=0;i2=1;j2=0;k2=1}else{i1=0;j1=0;k1=1;i2=1;j2=0;k2=1}}else{if(y0<z0){i1=0;j1=0;k1=1;i2=0;j2=1;k2=1}else if(x0<z0){i1=0;j1=1;k1=0;i2=0;j2=1;k2=1}else{i1=0;j1=1;k1=0;i2=1;j2=1;k2=1}}let x1=x0-i1+1/6,y1=y0-j1+1/6,z1=z0-k1+1/6,x2=x0-i2+2/6,y2=y0-j2+2/6,z2=z0-k2+2/6,x3=x0-1,y3=y0-1,z3=z0-1;let ii=i&255,jj=j&255,kk=k&255;let gi0=this.perm[ii+this.perm[jj+this.perm[kk]]]%12,gi1=this.perm[ii+i1+this.perm[jj+j1+this.perm[kk+k1]]]%12;let gi2=this.perm[ii+i2+this.perm[jj+j2+this.perm[kk+k2]]]%12,gi3=this.perm[ii+1+this.perm[jj+1+this.perm[kk+1]]]%12;let t0=0.6-x0*x0-y0*y0-z0*z0;if(t0>0){t0*=t0;n0=t0*t0*this.dot(this.grad3[gi0],x0,y0,z0)}let t1=0.6-x1*x1-y1*y1-z1*z1;if(t1>0){t1*=t1;n1=t1*t1*this.dot(this.grad3[gi1],x1,y1,z1)}let t2=0.6-x2*x2-y2*y2-z2*z2;if(t2>0){t2*=t2;n2=t2*t2*this.dot(this.grad3[gi2],x2,y2,z2)}let t3=0.6-x3*x3-y3*y3-z3*z3;if(t3>0){t3*=t3;n3=t3*t3*this.dot(this.grad3[gi3],x3,y3,z3)}return 32*(n0+n1+n2+n3);} }
     let noise = new SimplexNoise(currentSeed);
@@ -343,7 +411,7 @@
     }
 
     function updateEnemyMovement(dt) {
-      if(gameEnded) return; // NO MOVER ENEMIGOS SI EL JUEGO TERMINÓ
+      if(gameEnded) return;
       if(inCombat || !player) return;
       const playerPos = player.position;
       
@@ -582,15 +650,14 @@
       currentEnemyRef=null; 
       MisionesManager.verificarTodas(); 
       setInteractionCooldown(); 
-       setTimeout(() => {
-    arenaDiv.classList.add('hidden');
-    // 🎵 Volver a música del bioma
-    AudioManager.changeMusicForBiome(currentBiomaLevel);
-  }, 1200);
+      setTimeout(() => {
+        arenaDiv.classList.add('hidden');
+        AudioManager.changeMusicForBiome(currentBiomaLevel);
+      }, 1200);
     }
     
     function endFightDefeat(){
-      gameEnded = true; // BLOQUEAR TODO
+      gameEnded = true;
       inCombat=false; 
       isFightingAnim=false; 
       combatDefending=false;
@@ -598,14 +665,10 @@
       currentEnemyRef=null; 
       setInteractionCooldown(); 
       arenaDiv.classList.add('hidden');
-        arenaDiv.classList.add('hidden');
-  AudioManager.stopMusic(); // Silencio en derrota
-
+      AudioManager.stopMusic();
       
-      // Activar overlay para bloquear interacciones
       document.getElementById('gameEndedOverlay').classList.add('active');
       
-      // Calcular puntuación y mostrar panel
       setTimeout(() => {
         let total = (coins || 0) + (gemsCollected * 15) + ((window.enemigosVencidos || 0) * 5) + ((window.portalesUsados || 0) * 10) + Math.floor(heroMaxHP / 2);
         mostrarPanelScore(total, "lose");
@@ -613,8 +676,7 @@
     }
     
     function startFightingCombat(enemy){
-        // 🎵 Música de combate
-  AudioManager.changeMusicForActivity('combate');
+      AudioManager.changeMusicForActivity('combate');
       if(inCombat||!canInteract()||gameEnded) return;
       inCombat=true;
       combatDefending=false;
@@ -625,7 +687,6 @@
       disableBtns(false);
     }
 
-    // BATTLESHIP simplificado (igual que antes)
     const BS_ROWS=4,BS_COLS=5;let bsPlayerBoard,bsEnemyBoard,bsEnemyShips,bsPlayerShips,bsPlayerReady,bsGameOver,bsPlayerTurn,bsPlacementMode,bsPlayerShipsSunk,bsEnemyShipsSunk,selectedShipIndex,placementTempPositions;
     function getEnemyShipPositions(){return[{name:'Navío A',size:3,sunk:false,positions:[{row:3,col:3},{row:3,col:2},{row:3,col:4}]},{name:'Navío B',size:3,sunk:false,positions:[{row:1,col:2},{row:1,col:1},{row:1,col:3}]},{name:'Navío C',size:2,sunk:false,positions:[{row:0,col:4},{row:0,col:3}]}];}
     function resetBattleshipState(){bsPlayerBoard=Array(BS_ROWS).fill().map(()=>Array(BS_COLS).fill('empty'));bsEnemyBoard=Array(BS_ROWS).fill().map(()=>Array(BS_COLS).fill('empty'));bsEnemyShips=getEnemyShipPositions();bsPlayerShips=[{name:'Tu Navío 1',size:3,positions:[],sunk:false},{name:'Tu Navío 2',size:3,positions:[],sunk:false},{name:'Tu Navío 3',size:2,positions:[],sunk:false}];bsPlayerReady=false;bsGameOver=false;bsPlayerTurn=true;bsPlacementMode=true;bsPlayerShipsSunk=0;bsEnemyShipsSunk=0;selectedShipIndex=0;placementTempPositions=[];document.getElementById('bs-ready-btn').classList.remove('hidden');document.getElementById('bs-status-msg').innerText='🚢 Coloca tus naves en el tablero de abajo (click en celdas adyacentes)';}
@@ -636,23 +697,17 @@
     function bsReady(){if(selectedShipIndex<bsPlayerShips.length){document.getElementById('bs-status-msg').innerText='⚠️ Coloca todas tus naves primero';return;}bsPlayerReady=true;bsPlacementMode=false;document.getElementById('bs-ready-btn').classList.add('hidden');document.getElementById('bs-status-msg').innerText='🎯 ¡TU TURNO! Dispara en el RADAR';renderBSGrids();}
     function playerFire(r,c){if(!bsPlayerTurn||bsGameOver||bsPlacementMode||bsEnemyBoard[r][c]!=='empty')return;let hit=false;for(const ship of bsEnemyShips){for(const pos of ship.positions){if(pos.row===r&&pos.col===c){hit=true;bsEnemyBoard[r][c]='hit';if(!ship.sunk&&ship.positions.every(p=>bsEnemyBoard[p.row][p.col]==='hit')){ship.sunk=true;bsEnemyShipsSunk++;ship.positions.forEach(p=>{bsEnemyBoard[p.row][p.col]='sunk';});document.getElementById('bs-status-msg').innerText=`💀 ¡Hundiste ${ship.name}!`;}else{document.getElementById('bs-status-msg').innerText='💥 ¡IMPACTO!';}break;}}if(hit)break;}if(!hit){bsEnemyBoard[r][c]='miss';document.getElementById('bs-status-msg').innerText='💧 Agua...';}renderBSGrids();if(bsEnemyShipsSunk>=3){bsGameOver=true;document.getElementById('bs-status-msg').innerText='🏆 ¡VICTORIA TOTAL!';window.battleshipGanado=true;MisionesManager.verificarTodas();setTimeout(()=>closeBattleship(),2500);return;}bsPlayerTurn=false;document.getElementById('bs-status-msg').innerText='🤖 Turno de la computadora...';renderBSGrids();setTimeout(()=>enemyTurn(),800);}
     function enemyTurn(){if(bsGameOver)return;let available=[];for(let r=0;r<BS_ROWS;r++)for(let c=0;c<BS_COLS;c++)if(bsPlayerBoard[r][c]==='empty'||bsPlayerBoard[r][c]==='ship')available.push({row:r,col:c});if(!available.length)return;const shot=available[Math.floor(Math.random()*available.length)];if(bsPlayerBoard[shot.row][shot.col]==='ship'){bsPlayerBoard[shot.row][shot.col]='hit';for(const ship of bsPlayerShips){if(!ship.sunk&&ship.positions.every(p=>bsPlayerBoard[p.row][p.col]==='hit')){ship.sunk=true;bsPlayerShipsSunk++;ship.positions.forEach(p=>{bsPlayerBoard[p.row][p.col]='sunk';});}}}else{bsPlayerBoard[shot.row][shot.col]='miss';}renderBSGrids();if(bsPlayerShipsSunk>=3){bsGameOver=true;document.getElementById('bs-status-msg').innerText='💀 DERROTA...';setTimeout(()=>closeBattleship(),2500);return;}bsPlayerTurn=true;document.getElementById('bs-status-msg').innerText='🎯 ¡TU TURNO! Dispara en el RADAR';renderBSGrids();}
-    function openBattleship(){  // 🎵 Música de batalla naval
-  AudioManager.changeMusicForActivity('battleship');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inBattleship=true;initBattleship();document.getElementById('battleshipUI').classList.remove('hidden');}
-    function closeBattleship(){if(!inBattleship)return;inBattleship=false;bsGameOver=true;document.getElementById('battleshipUI').classList.add('hidden');setInteractionCooldown();if(player&&muellesList.length){const m=muellesList[0];const a=Math.atan2(player.position.z-m.z,player.position.x-m.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;AudioManager.changeMusicForBiome(currentBiomaLevel);}}
+    function openBattleship(){AudioManager.changeMusicForActivity('battleship');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inBattleship=true;initBattleship();document.getElementById('battleshipUI').classList.remove('hidden');}
+    function closeBattleship(){if(!inBattleship)return;inBattleship=false;bsGameOver=true;document.getElementById('battleshipUI').classList.add('hidden');setInteractionCooldown();if(player&&muellesList.length){const m=muellesList[0];const a=Math.atan2(player.position.z-m.z,player.position.x-m.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}AudioManager.changeMusicForBiome(currentBiomaLevel);}
 
     function closeSlotMachine(){AudioManager.changeMusicForBiome(currentBiomaLevel);if(!inSlotMachine)return;inSlotMachine=false;document.getElementById('slotUI').classList.add('hidden');setInteractionCooldown();if(player&&casinosList.length){const c=casinosList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
-    function openSlotMachine(){// 🎵 Música de casino
-  AudioManager.changeMusicForActivity('casino');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inSlotMachine=true;document.getElementById('slotUI').classList.remove('hidden');}
-    function closeShop(){// 🎵 Volver a música del bioma
-  AudioManager.changeMusicForBiome(currentBiomaLevel);if(!inShop)return;inShop=false;document.getElementById('shopUI').classList.add('hidden');setInteractionCooldown();if(player&&shopsList.length){const s=shopsList[0];const a=Math.atan2(player.position.z-s.z,player.position.x-s.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
-    function openShop(){// 🎵 Música de cabaña
-  AudioManager.changeMusicForActivity('cabaña'); if(inCombat||inShop||inBattleship||inChaman||!canInteract()||gameEnded)return;inShop=true;document.getElementById('shopUI').classList.remove('hidden');document.getElementById('shopCoins').innerText=coins;}
+    function openSlotMachine(){AudioManager.changeMusicForActivity('casino');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inSlotMachine=true;document.getElementById('slotUI').classList.remove('hidden');}
+    function closeShop(){AudioManager.changeMusicForBiome(currentBiomaLevel);if(!inShop)return;inShop=false;document.getElementById('shopUI').classList.add('hidden');setInteractionCooldown();if(player&&shopsList.length){const s=shopsList[0];const a=Math.atan2(player.position.z-s.z,player.position.x-s.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}}
+    function openShop(){AudioManager.changeMusicForActivity('cabaña'); if(inCombat||inShop||inBattleship||inChaman||!canInteract()||gameEnded)return;inShop=true;document.getElementById('shopUI').classList.remove('hidden');document.getElementById('shopCoins').innerText=coins;}
     function buyHealth(){if(coins>=12&&heroHP<heroMaxHP&&!gameEnded){coins-=12;heroHP=Math.min(heroMaxHP,heroHP+10);window.updateHUD();document.getElementById('shopCoins').innerText=coins;MisionesManager.verificarTodas();}}
     function buyPotion(){if(coins>=8&&!gameEnded){coins-=8;potions++;window.updateHUD();document.getElementById('shopCoins').innerText=coins;}}
-    function openChaman(){// 🎵 Música mística
-  AudioManager.changeMusicForActivity('chaman');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inChaman=true;const todas=MisionesManager.completadas.size>=MisionesManager.misiones.length-1;const gems=gemsCollected>=3;document.getElementById('chaman-dialog').innerText=todas&&gems?'"Has completado todas las misiones y reunido las 3 gemas... ¡Eres digno de la Medalla del Ganador!" 🍄':`"Aún te falta camino... Misiones: ${MisionesManager.completadas.size}/${MisionesManager.misiones.length-1}, Gemas: ${gemsCollected}/3"`;if(todas&&gems&&!window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ MEDALLA DEL GANADOR ✨🍄';window.medallaObtenida=true;MisionesManager.verificarTodas();}else if(window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ YA TIENES LA MEDALLA ✨🍄';}else{document.getElementById('chaman-reward').innerHTML='🔒';}document.getElementById('chamanUI').classList.remove('hidden');}
-    function closeChaman(){if(!inChaman)return;inChaman=false;document.getElementById('chamanUI').classList.add('hidden');setInteractionCooldown();if(player&&chamanesList.length){const c=chamanesList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;  AudioManager.changeMusicForBiome(currentBiomaLevel);
-}}
+    function openChaman(){AudioManager.changeMusicForActivity('chaman');if(inCombat||inShop||inSlotMachine||inBattleship||inChaman||!canInteract()||gameEnded)return;inChaman=true;const todas=MisionesManager.completadas.size>=MisionesManager.misiones.length-1;const gems=gemsCollected>=3;document.getElementById('chaman-dialog').innerText=todas&&gems?'"Has completado todas las misiones y reunido las 3 gemas... ¡Eres digno de la Medalla del Ganador!" 🍄':`"Aún te falta camino... Misiones: ${MisionesManager.completadas.size}/${MisionesManager.misiones.length-1}, Gemas: ${gemsCollected}/3"`;if(todas&&gems&&!window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ MEDALLA DEL GANADOR ✨🍄';window.medallaObtenida=true;MisionesManager.verificarTodas();}else if(window.medallaObtenida){document.getElementById('chaman-reward').innerHTML='🍄✨ YA TIENES LA MEDALLA ✨🍄';}else{document.getElementById('chaman-reward').innerHTML='🔒';}document.getElementById('chamanUI').classList.remove('hidden');}
+    function closeChaman(){if(!inChaman)return;inChaman=false;document.getElementById('chamanUI').classList.add('hidden');setInteractionCooldown();if(player&&chamanesList.length){const c=chamanesList[0];const a=Math.atan2(player.position.z-c.z,player.position.x-c.x);player.position.x+=Math.cos(a)*4.0;player.position.z+=Math.sin(a)*4.0;player.position.y=getHeight(player.position.x,player.position.z)+0.35;}AudioManager.changeMusicForBiome(currentBiomaLevel);}
 
     function updateInteractions(){
       if(!player||inCombat||inShop||inSlotMachine||inBattleship||inChaman||isAnimating||!canInteract()||gameEnded)return;
@@ -694,11 +749,11 @@
     function updatePlayerMovement(dt){if(!player||inCombat||inShop||inSlotMachine||inBattleship||inChaman||isAnimating||gameEnded)return;if(!moveActiveJoystick){let kx=0,kz=0;if(keysPressed['a']||keysPressed['arrowleft'])kx-=1;if(keysPressed['d']||keysPressed['arrowright'])kx+=1;if(keysPressed['w']||keysPressed['arrowup'])kz-=1;if(keysPressed['s']||keysPressed['arrowdown'])kz+=1;moveInput.x=kx;moveInput.z=kz;}if(!moveInput.x&&!moveInput.z)return;const spd=playerSpeed*dt;const fwd=new THREE.Vector3(camera.getWorldDirection(new THREE.Vector3()).x,0,camera.getWorldDirection(new THREE.Vector3()).z).normalize();const right=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0)).normalize();const move=new THREE.Vector3(0,0,0);move.addScaledVector(right,moveInput.x);move.addScaledVector(fwd,-moveInput.z);move.normalize().multiplyScalar(spd);player.position.add(move);player.rotation.y=Math.atan2(move.x,move.z);player.position.x=Math.min(43,Math.max(-43,player.position.x));player.position.z=Math.min(43,Math.max(-43,player.position.z));}
     function updateCameraFollow(){const r=zoomDistance;const x=Math.sin(cameraAngleX)*r,z=Math.cos(cameraAngleX)*r;if(player){camera.position.set(player.position.x+x,player.position.y+4.0+cameraAngleY*2.5,player.position.z+z);camera.lookAt(player.position);}}
 
-    function initJoysticks(){const mj=document.getElementById('move-joystick'),mt=document.getElementById('moveThumb'),cj=document.getElementById('camera-joystick'),ct=document.getElementById('cameraThumb');let mc={x:0,y:0},cc={x:0,y:0};mj.addEventListener('touchstart',e=>{if(gameEnded) return; e.preventDefault();moveActiveJoystick=true;const r=mj.getBoundingClientRect();mc.x=r.left+r.width/2;mc.y=r.top+r.height/2;});mj.addEventListener('mousedown',e=>{if(gameEnded) return; moveActiveJoystick=true;const r=mj.getBoundingClientRect();mc.x=r.left+r.width/2;mc.y=r.top+r.height/2;});cj.addEventListener('touchstart',e=>{if(gameEnded) return; e.preventDefault();camActiveJoystick=true;const r=cj.getBoundingClientRect();cc.x=r.left+r.width/2;cc.y=r.top+r.height/2;});cj.addEventListener('mousedown',e=>{if(gameEnded) return; camActiveJoystick=true;const r=cj.getBoundingClientRect();cc.x=r.left+r.width/2;cc.y=r.top+r.height/2;});const hm=(cx,cy,isMove)=>{if(gameEnded) return; if(isMove&&moveActiveJoystick){let dx=(cx-mc.x)/45,dy=(cy-mc.y)/45;dx=Math.min(1,Math.max(-1,dx));dy=Math.min(1,Math.max(-1,dy));mt.style.transform=`translate(calc(-50% + ${dx*35}px), calc(-50% + ${dy*35}px))`;moveInput.x=dx;moveInput.z=dy;}if(!isMove&&camActiveJoystick){let dx=(cx-cc.x)/45,dy=(cy-cc.y)/45;dx=Math.min(1,Math.max(-1,dx));dy=Math.min(1,Math.max(-1,dy));ct.style.transform=`translate(calc(-50% + ${dx*35}px), calc(-50% + ${dy*35}px))`;cameraAngleX+=dx*0.035;cameraAngleY+=dy*0.03;cameraAngleY=Math.min(1.3,Math.max(0.3,cameraAngleY));}};window.addEventListener('touchmove',e=>{if(moveActiveJoystick||camActiveJoystick){e.preventDefault();const t=e.touches[0];hm(t.clientX,t.clientY,moveActiveJoystick);if(camActiveJoystick)hm(t.clientX,t.clientY,false);}});window.addEventListener('mousemove',e=>{hm(e.clientX,e.clientY,moveActiveJoystick);if(camActiveJoystick)hm(e.clientX,e.clientY,false);});const rm=()=>{moveActiveJoystick=false;mt.style.transform='translate(-50%,-50%)';moveInput={x:0,z:0};};const rc=()=>{camActiveJoystick=false;ct.style.transform='translate(-50%,-50%)';};window.addEventListener('touchend',()=>{rm();rc();});window.addEventListener('mouseup',()=>{rm();rc();});}
+    function initJoysticks(){const mj=document.getElementById('move-joystick'),mt=document.getElementById('moveThumb'),cj=document.getElementById('camera-joystick'),ct=document.getElementById('cameraThumb');let mc={x:0,y:0},cc={x:0,y:0};mj.addEventListener('touchstart',e=>{if(!gameStarted||gameEnded) return; e.preventDefault();moveActiveJoystick=true;const r=mj.getBoundingClientRect();mc.x=r.left+r.width/2;mc.y=r.top+r.height/2;});mj.addEventListener('mousedown',e=>{if(!gameStarted||gameEnded) return; moveActiveJoystick=true;const r=mj.getBoundingClientRect();mc.x=r.left+r.width/2;mc.y=r.top+r.height/2;});cj.addEventListener('touchstart',e=>{if(!gameStarted||gameEnded) return; e.preventDefault();camActiveJoystick=true;const r=cj.getBoundingClientRect();cc.x=r.left+r.width/2;cc.y=r.top+r.height/2;});cj.addEventListener('mousedown',e=>{if(!gameStarted||gameEnded) return; camActiveJoystick=true;const r=cj.getBoundingClientRect();cc.x=r.left+r.width/2;cc.y=r.top+r.height/2;});const hm=(cx,cy,isMove)=>{if(!gameStarted||gameEnded) return; if(isMove&&moveActiveJoystick){let dx=(cx-mc.x)/45,dy=(cy-mc.y)/45;dx=Math.min(1,Math.max(-1,dx));dy=Math.min(1,Math.max(-1,dy));mt.style.transform=`translate(calc(-50% + ${dx*35}px), calc(-50% + ${dy*35}px))`;moveInput.x=dx;moveInput.z=dy;}if(!isMove&&camActiveJoystick){let dx=(cx-cc.x)/45,dy=(cy-cc.y)/45;dx=Math.min(1,Math.max(-1,dx));dy=Math.min(1,Math.max(-1,dy));ct.style.transform=`translate(calc(-50% + ${dx*35}px), calc(-50% + ${dy*35}px))`;cameraAngleX+=dx*0.035;cameraAngleY+=dy*0.03;cameraAngleY=Math.min(1.3,Math.max(0.3,cameraAngleY));}};window.addEventListener('touchmove',e=>{if(!gameStarted) return; if(moveActiveJoystick||camActiveJoystick){e.preventDefault();const t=e.touches[0];hm(t.clientX,t.clientY,moveActiveJoystick);if(camActiveJoystick)hm(t.clientX,t.clientY,false);}});window.addEventListener('mousemove',e=>{if(!gameStarted) return; hm(e.clientX,e.clientY,moveActiveJoystick);if(camActiveJoystick)hm(e.clientX,e.clientY,false);});const rm=()=>{moveActiveJoystick=false;mt.style.transform='translate(-50%,-50%)';moveInput={x:0,z:0};};const rc=()=>{camActiveJoystick=false;ct.style.transform='translate(-50%,-50%)';};window.addEventListener('touchend',()=>{rm();rc();});window.addEventListener('mouseup',()=>{rm();rc();});}
 
     document.getElementById('closeSlotBtn').addEventListener('click',closeSlotMachine);
     document.getElementById('closeShop').addEventListener('click',closeShop);
-    document.getElementById('attack-btn').addEventListener('click',()=>{if(inCombat||projectileCooldown>0||!player||gameEnded)return;projectileCooldown=0.7;const fwd=new THREE.Vector3(0,0,1).applyQuaternion(player.quaternion);const proj=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8),new THREE.MeshStandardMaterial({color:0xffaa44}));proj.position.copy(player.position.clone().add(new THREE.Vector3(0,1,0)));scene.add(proj);let life=0;function anim(){life+=0.12;proj.position.addScaledVector(fwd,0.65);for(let i=0;i<enemiesList.length;i++){const e=enemiesList[i];if(proj.position.distanceTo(e.mesh.position)<1.3){scene.remove(proj);e.hp-=heroAtk+2;if(e.hp<=0){scene.remove(e.mesh);enemiesList.splice(i,1);coins+=3;window.updateHUD();window.enemigosVencidos=(window.enemigosVencidos||0)+1;MisionesManager.verificarTodas();}return;}}if(life<2.2&&proj.position.length()<55)requestAnimationFrame(anim);else scene.remove(proj);}requestAnimationFrame(anim);});
+    document.getElementById('attack-btn').addEventListener('click',()=>{if(!gameStarted||inCombat||projectileCooldown>0||!player||gameEnded)return;projectileCooldown=0.7;const fwd=new THREE.Vector3(0,0,1).applyQuaternion(player.quaternion);const proj=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8),new THREE.MeshStandardMaterial({color:0xffaa44}));proj.position.copy(player.position.clone().add(new THREE.Vector3(0,1,0)));scene.add(proj);let life=0;function anim(){life+=0.12;proj.position.addScaledVector(fwd,0.65);for(let i=0;i<enemiesList.length;i++){const e=enemiesList[i];if(proj.position.distanceTo(e.mesh.position)<1.3){scene.remove(proj);e.hp-=heroAtk+2;if(e.hp<=0){scene.remove(e.mesh);enemiesList.splice(i,1);coins+=3;window.updateHUD();window.enemigosVencidos=(window.enemigosVencidos||0)+1;MisionesManager.verificarTodas();}return;}}if(life<2.2&&proj.position.length()<55)requestAnimationFrame(anim);else scene.remove(proj);}requestAnimationFrame(anim);});
     const slotEmojis=['🍒','🍋','🍊','🍉','⭐','💎'];
     function spinSlot(){if(coins<5||gameEnded){document.getElementById('slotResultMsg').innerHTML='❌ Necesitas 5 🪙';return;}coins-=5;window.updateHUD();const r1=document.getElementById('reel1'),r2=document.getElementById('reel2'),r3=document.getElementById('reel3');let spins=8;let interval=setInterval(()=>{r1.textContent=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];r2.textContent=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];r3.textContent=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];spins--;if(spins<=0){clearInterval(interval);let a,b,c;if(Math.random()<0.2){const j=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];a=b=c=j;}else{a=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];b=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];c=slotEmojis[Math.floor(Math.random()*slotEmojis.length)];if(a!==b&&b!==c&&a!==c&&Math.random()<0.4)b=a;}r1.textContent=a;r2.textContent=b;r3.textContent=c;if(a===b&&b===c){let premios=[{text:"💰 JACKPOT +25 MONEDAS",action:()=>{coins+=25;}},{text:"❤️ JACKPOT +12 VIDAS",action:()=>{heroHP=Math.min(heroMaxHP,heroHP+12);}},{text:"🧪 JACKPOT +4 POCIONES",action:()=>{potions+=4;}}];let p=premios[Math.floor(Math.random()*premios.length)];p.action();document.getElementById('slotResultMsg').innerHTML=`🎉✨ ${p.text} ✨🎉`;window.updateHUD();}else if(a===b||b===c||a===c){coins+=3;window.updateHUD();document.getElementById('slotResultMsg').innerHTML='🎲 Dos iguales! +3 🪙';}else{document.getElementById('slotResultMsg').innerHTML='😞 Sin suerte...';}MisionesManager.verificarTodas();}},70);}
     document.getElementById('buyHealth').onclick=buyHealth;
@@ -711,7 +766,7 @@
     document.getElementById('bs-ready-btn').addEventListener('click',bsReady);
     document.getElementById('bs-reset-placement-btn').addEventListener('click',bsResetPlacement);
     document.getElementById('closeChaman').addEventListener('click',closeChaman);
-    document.getElementById('misiones-btn').addEventListener('click',()=>{if(gameEnded) return; const p=document.getElementById('misiones-panel');p.classList.toggle('hidden');MisionesManager.renderizar();});
+    document.getElementById('misiones-btn').addEventListener('click',()=>{if(!gameStarted||gameEnded) return; const p=document.getElementById('misiones-panel');p.classList.toggle('hidden');MisionesManager.renderizar();});
     document.getElementById('cerrar-misiones').addEventListener('click',()=>{document.getElementById('misiones-panel').classList.add('hidden');});
 
     document.getElementById('submitScoreBtn').addEventListener('click', ()=>{const nombre = document.getElementById('score-name-input').value.trim();if(nombre) enviarPuntuacionFinal(nombre);else document.getElementById('scoreResultMsg').innerHTML = "⚠️ Ingresa un nombre";});
@@ -771,94 +826,101 @@
     let currentScoreValue = 0, currentGameEndType = "", scoreSubmissionLock = false;
     setupScorePanel();
     
-    let lastFrame=performance.now();
-    function gameLoop(){const now=performance.now(),dt=Math.min(0.033,(now-lastFrame)/1000);lastFrame=now;if(projectileCooldown>0)projectileCooldown-=dt;updatePlayerMovement(dt);updateEnemyMovement(dt);updateInteractions();updateCameraFollow();items.forEach(i=>{if(i.mesh)i.mesh.rotation.y+=0.03;});renderer.render(scene,camera);labelRenderer.render(scene,camera);requestAnimationFrame(gameLoop);}
-    function init(){initJoysticks();cargarRankingLocal();generateTerrain();generateTrees();spawnItems();generatePortals();createPlayer();window.updateHUD();MisionesManager.renderizar();gameLoop();}
-    init();
-
-
     // ============ SISTEMA DE AUDIO ============
-const AudioManager = {
-  currentMusic: null,
-  audioContext: null,
-  musicVolume: 0.3,
-  sounds: {},
-  
-  // Mapeo de archivos de audio
-  musicFiles: {
-    bosque: 'sonidos/bosque_aventura.wav',  // CAMBIA por tus URLs reales
-    tundra: 'sonidos/tundra_aventura.wav',
-    volcan: 'sonidos/volcan_aventura.wav',
-    combate: 'sonidos/batalla_epica.wav',
-    casino: 'sonidos/casino_fiesta.wav',
-    cabaña: 'sonidos/cabaña_mercader.wav',
-    battleship: 'sonidos/batalla_ship.wav',
-    chaman: 'sonidos/chaman_mistico.wav'
-  },
-  
-  init() {
-    try {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e) {
-      console.log('Audio no disponible');
-    }
-  },
-  
-  playMusic(musicKey) {
-    if (!this.audioContext) return;
-    
-    // Detener música actual
-    this.stopMusic();
-    
-    const fileUrl = this.musicFiles[musicKey];
-    if (!fileUrl) return;
-    
-    // Crear elemento de audio
-    const audio = new Audio(fileUrl);
-    audio.loop = true;
-    audio.volume = this.musicVolume;
-    
-    // Conectar al AudioContext para mejor control
-    const source = this.audioContext.createMediaElementSource(audio);
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = this.musicVolume;
-    source.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-    
-    audio.play().catch(e => console.log('Autoplay bloqueado:', e));
-    this.currentMusic = { audio, source, gainNode };
-  },
-  
-  stopMusic() {
-    if (this.currentMusic) {
-      this.currentMusic.audio.pause();
-      this.currentMusic.audio.currentTime = 0;
-      this.currentMusic = null;
-    }
-  },
-  
-  changeMusicForBiome(biomeIndex) {
-    const biomes = ['bosque', 'tundra', 'volcan'];
-    this.playMusic(biomes[biomeIndex] || 'bosque');
-  },
-  
-  changeMusicForActivity(activity) {
-    this.playMusic(activity);
-  },
-  
-  resumeAudioContext() {
-    if (this.audioContext && this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
-    }
-  }
-};
+    const AudioManager = {
+      currentMusic: null,
+      audioContext: null,
+      musicVolume: 0.3,
+      musicFiles: {
+        bosque: 'sonidos/bosque_aventura.wav',
+        tundra: 'sonidos/tundra_aventura.wav',
+        volcan: 'sonidos/volcan_aventura.wav',
+        combate: 'sonidos/batalla_epica.wav',
+        casino: 'sonidos/casino_fiesta.wav',
+        cabaña: 'sonidos/cabaña_mercader.wav',
+        battleship: 'sonidos/batalla_ship.wav',
+        chaman: 'sonidos/chaman_mistico.wav'
+      },
+      init() {
+        try {
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) { console.log('Audio no disponible'); }
+      },
+      playMusic(musicKey) {
+        if (!this.audioContext) return;
+        this.stopMusic();
+        const fileUrl = this.musicFiles[musicKey];
+        if (!fileUrl) return;
+        const audio = new Audio(fileUrl);
+        audio.loop = true;
+        audio.volume = this.musicVolume;
+        const source = this.audioContext.createMediaElementSource(audio);
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.value = this.musicVolume;
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        audio.play().catch(e => console.log('Reproducción bloqueada:', e));
+        this.currentMusic = { audio, source, gainNode };
+      },
+      stopMusic() {
+        if (this.currentMusic) {
+          this.currentMusic.audio.pause();
+          this.currentMusic.audio.currentTime = 0;
+          this.currentMusic = null;
+        }
+      },
+      changeMusicForBiome(biomeIndex) {
+        const biomes = ['bosque', 'tundra', 'volcan'];
+        this.playMusic(biomes[biomeIndex] || 'bosque');
+      },
+      changeMusicForActivity(activity) { this.playMusic(activity); },
+      resumeAudioContext() {
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+          this.audioContext.resume();
+        }
+      }
+    };
 
-// Inicializar en el inicio
-AudioManager.init();
+    // ============ INICIO DESDE MENÚ ============
+    document.getElementById('playButton').addEventListener('click', () => {
+      document.getElementById('mainMenu').style.opacity = '0';
+      setTimeout(() => document.getElementById('mainMenu').style.display = 'none', 500);
+      
+      gameStarted = true;
+      AudioManager.init();
+      AudioManager.resumeAudioContext();
+      AudioManager.changeMusicForBiome(0);
+      
+      init();
+    });
 
-// Reanudar AudioContext con la primera interacción del usuario
-document.addEventListener('click', () => AudioManager.resumeAudioContext(), { once: true });
-document.addEventListener('touchstart', () => AudioManager.resumeAudioContext(), { once: true });
+    function init(){
+      initJoysticks();
+      cargarRankingLocal();
+      generateTerrain();
+      generateTrees();
+      spawnItems();
+      generatePortals();
+      createPlayer();
+      window.updateHUD();
+      MisionesManager.renderizar();
+      gameLoop();
+    }
+
+    let lastFrame=performance.now();
+    function gameLoop(){
+      const now=performance.now(),dt=Math.min(0.033,(now-lastFrame)/1000);
+      lastFrame=now;
+      if(projectileCooldown>0)projectileCooldown-=dt;
+      updatePlayerMovement(dt);
+      updateEnemyMovement(dt);
+      updateInteractions();
+      updateCameraFollow();
+      items.forEach(i=>{if(i.mesh)i.mesh.rotation.y+=0.03;});
+      renderer.render(scene,camera);
+      labelRenderer.render(scene,camera);
+      requestAnimationFrame(gameLoop);
+    }
   </script>
 </body>
 </html>
